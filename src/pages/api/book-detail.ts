@@ -25,9 +25,24 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const clientId = getEnvVar(locals, 'NAVER_CLIENT_ID');
   const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
 
+  // 검색어 준비
+  const searchQuery = isbn ? isbn.replace(/-/g, '') : title;
+  const naverSearchUrl = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(searchQuery + ' 책')}`;
+
+  // 네이버 API 키가 없으면 검색 링크만 반환
   if (!clientId || !clientSecret) {
-    return new Response(JSON.stringify({ error: 'Naver API not configured' }), {
-      status: 500,
+    return new Response(JSON.stringify({
+      success: true,
+      book: {
+        title: title || '',
+        description: '',
+        link: naverSearchUrl,
+        price: null,
+        discount: null
+      },
+      fallback: true
+    }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -45,7 +60,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Naver API error: ${response.status}`);
+      // API 에러 시 검색 링크 반환
+      return new Response(JSON.stringify({
+        success: true,
+        book: {
+          title: title || '',
+          description: '',
+          link: naverSearchUrl,
+          price: null,
+          discount: null
+        },
+        fallback: true
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const data = await response.json();
@@ -73,9 +102,17 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    // 검색 결과 없으면 검색 링크 반환
     return new Response(JSON.stringify({
-      success: false,
-      message: 'Book not found'
+      success: true,
+      book: {
+        title: title || '',
+        description: '',
+        link: naverSearchUrl,
+        price: null,
+        discount: null
+      },
+      fallback: true
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -83,8 +120,19 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
   } catch (error) {
     console.error('Naver Book API error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch book detail' }), {
-      status: 500,
+    // 에러 시에도 검색 링크 반환
+    return new Response(JSON.stringify({
+      success: true,
+      book: {
+        title: title || '',
+        description: '',
+        link: naverSearchUrl,
+        price: null,
+        discount: null
+      },
+      fallback: true
+    }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }

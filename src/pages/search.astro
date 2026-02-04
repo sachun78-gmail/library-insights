@@ -512,8 +512,9 @@ import { regions as regionsData } from '../data/regions.js';
         let apiUrl = '/api/book-detail?';
         if (isbn) {
           apiUrl += `isbn=${encodeURIComponent(isbn)}`;
-        } else if (title) {
-          apiUrl += `title=${encodeURIComponent(title)}`;
+        }
+        if (title) {
+          apiUrl += `${isbn ? '&' : ''}title=${encodeURIComponent(title)}`;
         }
 
         const response = await fetch(apiUrl);
@@ -524,34 +525,58 @@ import { regions as regionsData } from '../data/regions.js';
         if (data.success && data.book) {
           const bookData = data.book;
 
-          // Show description
+          // Show description (if available)
           if (bookData.description && bookDescription) {
             const descP = bookDescription.querySelector('p');
             if (descP) {
               descP.textContent = bookData.description;
+              bookDescription.classList.remove('hidden');
             }
+          } else if (bookDescription) {
+            bookDescription.classList.add('hidden');
           }
 
-          // Show price info
+          // Show price info (if available)
           if (bookData.price && bookData.discount) {
             bookPriceInfo?.classList.remove('hidden');
             if (bookPrice) bookPrice.textContent = `정가: ${parseInt(bookData.price).toLocaleString()}원`;
             if (bookDiscount) bookDiscount.textContent = `${parseInt(bookData.discount).toLocaleString()}원`;
+          } else {
+            bookPriceInfo?.classList.add('hidden');
           }
 
-          // Set Naver link
+          // Set Naver link (always available)
           if (bookData.link && naverReviewLink) {
             naverReviewLink.href = bookData.link;
+          } else if (naverReviewLink && title) {
+            // Fallback to search URL
+            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
           }
 
           reviewContent?.classList.remove('hidden');
         } else {
-          reviewEmpty?.classList.remove('hidden');
+          // Show fallback link even on error
+          if (naverReviewLink && title) {
+            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
+            if (bookDescription) bookDescription.classList.add('hidden');
+            bookPriceInfo?.classList.add('hidden');
+            reviewContent?.classList.remove('hidden');
+          } else {
+            reviewEmpty?.classList.remove('hidden');
+          }
         }
       } catch (error) {
         console.error('Book detail fetch error:', error);
         reviewLoading?.classList.add('hidden');
-        reviewEmpty?.classList.remove('hidden');
+        // Show fallback link even on error
+        if (naverReviewLink && title) {
+          naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
+          if (bookDescription) bookDescription.classList.add('hidden');
+          bookPriceInfo?.classList.add('hidden');
+          reviewContent?.classList.remove('hidden');
+        } else {
+          reviewEmpty?.classList.remove('hidden');
+        }
       }
     }
 
