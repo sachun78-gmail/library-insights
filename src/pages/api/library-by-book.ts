@@ -2,7 +2,15 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request }) => {
+// Helper to get env variable (works in both local and Cloudflare)
+function getEnvVar(locals: any, key: string): string | undefined {
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  return (import.meta.env as any)[key];
+}
+
+export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const isbn = url.searchParams.get('isbn') || '';
   const region = url.searchParams.get('region') || '';
@@ -15,7 +23,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const authKey = import.meta.env.DATA4LIBRARY_API_KEY;
+  const authKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
 
   if (!authKey) {
     return new Response(JSON.stringify({ error: 'API key not configured' }), {

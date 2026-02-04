@@ -2,7 +2,15 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request }) => {
+// Helper to get env variable (works in both local and Cloudflare)
+function getEnvVar(locals: any, key: string): string | undefined {
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  return (import.meta.env as any)[key];
+}
+
+export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const isbn = url.searchParams.get('isbn') || '';
   const title = url.searchParams.get('title') || '';
@@ -14,8 +22,8 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const clientId = import.meta.env.NAVER_CLIENT_ID;
-  const clientSecret = import.meta.env.NAVER_CLIENT_SECRET;
+  const clientId = getEnvVar(locals, 'NAVER_CLIENT_ID');
+  const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
 
   if (!clientId || !clientSecret) {
     return new Response(JSON.stringify({ error: 'Naver API not configured' }), {

@@ -2,7 +2,17 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request }) => {
+// Helper to get env variable (works in both local and Cloudflare)
+function getEnvVar(locals: any, key: string): string | undefined {
+  // Try Cloudflare runtime env first
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  // Fallback to import.meta.env (local dev)
+  return (import.meta.env as any)[key];
+}
+
+export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const keyword = url.searchParams.get('keyword') || '';
   const pageNo = url.searchParams.get('pageNo') || '1';
@@ -15,7 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const authKey = import.meta.env.DATA4LIBRARY_API_KEY;
+  const authKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
 
   if (!authKey) {
     return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -37,7 +47,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     console.error('Search API error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch data' }), {
+    return new Response(JSON.stringify({ error: 'Failed to fetch data', details: String(error) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

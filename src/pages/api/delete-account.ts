@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
+// Helper to get env variable (works in both local and Cloudflare)
+function getEnvVar(locals: any, key: string): string | undefined {
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  return (import.meta.env as any)[key];
+}
+
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const { userId, accessToken } = await request.json();
 
@@ -15,9 +23,19 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Create admin client with secret key
+    const supabaseUrl = getEnvVar(locals, 'PUBLIC_SUPABASE_URL');
+    const supabaseSecretKey = getEnvVar(locals, 'SUPABASE_SECRET_KEY');
+
+    if (!supabaseUrl || !supabaseSecretKey) {
+      return new Response(JSON.stringify({ error: 'Supabase not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const supabaseAdmin = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.SUPABASE_SECRET_KEY,
+      supabaseUrl,
+      supabaseSecretKey,
       {
         auth: {
           autoRefreshToken: false,
