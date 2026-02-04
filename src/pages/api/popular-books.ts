@@ -31,8 +31,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 도서관 정보나루 - 인기대출도서 조회 API
-    let apiUrl = `http://data4library.kr/api/loanItemSrch?authKey=${authKey}&format=json&pageNo=${pageNo}&pageSize=${pageSize}`;
+    // 도서관 정보나루 - 인기대출도서 조회 API (HTTPS 필수 - Cloudflare)
+    let apiUrl = `https://data4library.kr/api/loanItemSrch?authKey=${authKey}&format=json&pageNo=${pageNo}&pageSize=${pageSize}`;
 
     if (startDt) apiUrl += `&startDt=${startDt}`;
     if (endDt) apiUrl += `&endDt=${endDt}`;

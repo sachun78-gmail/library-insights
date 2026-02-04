@@ -35,8 +35,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 도서관 정보나루 도서 검색 API
-    const apiUrl = `http://data4library.kr/api/srchBooks?authKey=${authKey}&title=${encodeURIComponent(keyword)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+    // 도서관 정보나루 도서 검색 API (HTTPS 필수 - Cloudflare)
+    const apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&title=${encodeURIComponent(keyword)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();

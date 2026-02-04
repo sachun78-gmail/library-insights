@@ -33,8 +33,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 도서관 정보나루 - 도서 소장 도서관 조회 API
-    let apiUrl = `http://data4library.kr/api/libSrchByBook?authKey=${authKey}&isbn=${isbn}&format=json`;
+    // 도서관 정보나루 - 도서 소장 도서관 조회 API (HTTPS 필수 - Cloudflare)
+    let apiUrl = `https://data4library.kr/api/libSrchByBook?authKey=${authKey}&isbn=${isbn}&format=json`;
 
     if (region) {
       apiUrl += `&region=${region}`;

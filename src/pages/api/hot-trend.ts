@@ -28,8 +28,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 도서관 정보나루 - 대출 급상승 도서 API
-    const apiUrl = `http://data4library.kr/api/hotTrend?authKey=${authKey}&format=json&searchDt=${searchDt}`;
+    // 도서관 정보나루 - 대출 급상승 도서 API (HTTPS 필수 - Cloudflare)
+    const apiUrl = `https://data4library.kr/api/hotTrend?authKey=${authKey}&format=json&searchDt=${searchDt}`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();
