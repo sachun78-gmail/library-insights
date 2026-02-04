@@ -178,8 +178,35 @@ import { regions as regionsData } from '../data/regions.js';
 
         <!-- Review Content -->
         <div id="review-content" class="hidden">
-          <!-- Description -->
+          <!-- Blog Review -->
+          <div id="blog-review" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="material-symbols-outlined text-[#03C75A] text-lg">forum</span>
+              <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">블로그 리뷰</span>
+            </div>
+            <h4 id="review-title" class="text-sm sm:text-base font-bold text-charcoal dark:text-white mb-2 line-clamp-2"></h4>
+            <p id="review-description" class="text-xs sm:text-sm text-charcoal/70 dark:text-white/70 leading-relaxed line-clamp-3 mb-3"></p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-xs text-charcoal/50 dark:text-white/50">
+                <span class="material-symbols-outlined text-sm">person</span>
+                <span id="review-blogger"></span>
+                <span>·</span>
+                <span id="review-date"></span>
+              </div>
+              <a id="review-link" href="#" target="_blank" rel="noopener noreferrer"
+                 class="text-xs text-[#03C75A] hover:underline flex items-center gap-1">
+                전체 보기
+                <span class="material-symbols-outlined text-sm">open_in_new</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Book Description -->
           <div id="book-description" class="mb-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-lg">description</span>
+              <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">책 소개</span>
+            </div>
             <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed line-clamp-4"></p>
           </div>
 
@@ -198,7 +225,7 @@ import { regions as regionsData } from '../data/regions.js';
             <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
             </svg>
-            네이버에서 리뷰 보기
+            네이버에서 더 많은 리뷰 보기
           </a>
         </div>
 
@@ -329,6 +356,14 @@ import { regions as regionsData } from '../data/regions.js';
     const bookPrice = document.getElementById('book-price');
     const bookDiscount = document.getElementById('book-discount');
     const naverReviewLink = document.getElementById('naver-review-link');
+
+    // Blog review elements
+    const blogReview = document.getElementById('blog-review');
+    const reviewTitle = document.getElementById('review-title');
+    const reviewDescription = document.getElementById('review-description');
+    const reviewBlogger = document.getElementById('review-blogger');
+    const reviewDate = document.getElementById('review-date');
+    const reviewLink = document.getElementById('review-link');
 
     // Set search keyword in UI
     if (searchKeywordEl) searchKeywordEl.textContent = `"${keyword}"`;
@@ -502,11 +537,18 @@ import { regions as regionsData } from '../data/regions.js';
     // Default placeholder for modal
     const modalPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='192' viewBox='0 0 128 192'%3E%3Crect fill='%23e2e8f0' width='128' height='192'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='58%25' font-family='Arial' font-size='12' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
+    // Format date from YYYYMMDD to YYYY.MM.DD
+    function formatDate(dateStr) {
+      if (!dateStr || dateStr.length !== 8) return dateStr;
+      return `${dateStr.slice(0,4)}.${dateStr.slice(4,6)}.${dateStr.slice(6,8)}`;
+    }
+
     // Fetch book details from Naver API
     async function fetchBookDetails(isbn, title) {
       reviewLoading?.classList.remove('hidden');
       reviewContent?.classList.add('hidden');
       reviewEmpty?.classList.add('hidden');
+      blogReview?.classList.add('hidden');
 
       try {
         let apiUrl = '/api/book-detail?';
@@ -524,6 +566,17 @@ import { regions as regionsData } from '../data/regions.js';
 
         if (data.success && data.book) {
           const bookData = data.book;
+
+          // Show blog review (if available)
+          if (data.review && blogReview) {
+            const review = data.review;
+            if (reviewTitle) reviewTitle.textContent = review.title;
+            if (reviewDescription) reviewDescription.textContent = review.description;
+            if (reviewBlogger) reviewBlogger.textContent = review.bloggerName;
+            if (reviewDate) reviewDate.textContent = formatDate(review.postDate);
+            if (reviewLink) reviewLink.href = review.link;
+            blogReview.classList.remove('hidden');
+          }
 
           // Show description (if available)
           if (bookData.description && bookDescription) {
@@ -545,19 +598,16 @@ import { regions as regionsData } from '../data/regions.js';
             bookPriceInfo?.classList.add('hidden');
           }
 
-          // Set Naver link (always available)
-          if (bookData.link && naverReviewLink) {
-            naverReviewLink.href = bookData.link;
-          } else if (naverReviewLink && title) {
-            // Fallback to search URL
-            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
+          // Set Naver link
+          if (naverReviewLink && title) {
+            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
           }
 
           reviewContent?.classList.remove('hidden');
         } else {
           // Show fallback link even on error
           if (naverReviewLink && title) {
-            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
+            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
             if (bookDescription) bookDescription.classList.add('hidden');
             bookPriceInfo?.classList.add('hidden');
             reviewContent?.classList.remove('hidden');
@@ -570,9 +620,10 @@ import { regions as regionsData } from '../data/regions.js';
         reviewLoading?.classList.add('hidden');
         // Show fallback link even on error
         if (naverReviewLink && title) {
-          naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책')}`;
+          naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
           if (bookDescription) bookDescription.classList.add('hidden');
           bookPriceInfo?.classList.add('hidden');
+          blogReview?.classList.add('hidden');
           reviewContent?.classList.remove('hidden');
         } else {
           reviewEmpty?.classList.remove('hidden');

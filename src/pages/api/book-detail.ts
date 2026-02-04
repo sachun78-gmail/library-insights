@@ -10,6 +10,12 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return (import.meta.env as any)[key];
 }
 
+// HTML 태그 제거 함수
+function stripHtml(str: string | undefined): string {
+  if (!str) return '';
+  return str.replace(/<[^>]*>/g, '');
+}
+
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const isbn = url.searchParams.get('isbn') || '';
@@ -26,8 +32,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
 
   // 검색어 준비
-  const searchQuery = isbn ? isbn.replace(/-/g, '') : title;
-  const naverSearchUrl = `https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=${encodeURIComponent(searchQuery + ' 책')}`;
+  const searchQuery = title || isbn.replace(/-/g, '');
+  const naverSearchUrl = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(searchQuery + ' 책 리뷰')}`;
 
   // 네이버 API 키가 없으면 검색 링크만 반환
   if (!clientId || !clientSecret) {
@@ -40,6 +46,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         price: null,
         discount: null
       },
+      review: null,
       fallback: true
     }), {
       status: 200,
@@ -48,79 +55,82 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 네이버 책 검색 API - ISBN으로 검색하거나 제목으로 검색
-    const query = isbn ? `isbn:${isbn.replace(/-/g, '')}` : title;
-    const apiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=1`;
+    // 1. 네이버 책 검색 API
+    const bookQuery = isbn ? `isbn:${isbn.replace(/-/g, '')}` : title;
+    const bookApiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(bookQuery)}&display=1`;
 
-    const response = await fetch(apiUrl, {
+    const bookResponse = await fetch(bookApiUrl, {
       headers: {
         'X-Naver-Client-Id': clientId,
         'X-Naver-Client-Secret': clientSecret
       }
     });
 
-    if (!response.ok) {
-      // API 에러 시 검색 링크 반환
-      return new Response(JSON.stringify({
-        success: true,
-        book: {
-          title: title || '',
-          description: '',
-          link: naverSearchUrl,
-          price: null,
-          discount: null
-        },
-        fallback: true
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const data = await response.json();
-
-    // 검색 결과가 있으면 첫 번째 결과 반환
-    if (data.items && data.items.length > 0) {
-      const book = data.items[0];
-      return new Response(JSON.stringify({
-        success: true,
-        book: {
-          title: book.title?.replace(/<[^>]*>/g, ''), // HTML 태그 제거
-          author: book.author?.replace(/<[^>]*>/g, ''),
+    let bookData = null;
+    if (bookResponse.ok) {
+      const bookJson = await bookResponse.json();
+      if (bookJson.items && bookJson.items.length > 0) {
+        const book = bookJson.items[0];
+        bookData = {
+          title: stripHtml(book.title),
+          author: stripHtml(book.author),
           publisher: book.publisher,
           pubdate: book.pubdate,
-          description: book.description?.replace(/<[^>]*>/g, ''),
+          description: stripHtml(book.description),
           isbn: book.isbn,
           image: book.image,
-          link: book.link, // 네이버 책 상세 페이지 링크
-          discount: book.discount, // 판매가
-          price: book.price // 정가
-        }
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+          link: book.link,
+          discount: book.discount,
+          price: book.price
+        };
+      }
     }
 
-    // 검색 결과 없으면 검색 링크 반환
+    // 2. 네이버 블로그 검색 API - 책 리뷰 검색
+    const reviewQuery = `${title} 책 리뷰`;
+    const blogApiUrl = `https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(reviewQuery)}&display=1&sort=sim`;
+
+    const blogResponse = await fetch(blogApiUrl, {
+      headers: {
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret
+      }
+    });
+
+    let reviewData = null;
+    if (blogResponse.ok) {
+      const blogJson = await blogResponse.json();
+      if (blogJson.items && blogJson.items.length > 0) {
+        const blog = blogJson.items[0];
+        reviewData = {
+          title: stripHtml(blog.title),
+          description: stripHtml(blog.description),
+          bloggerName: blog.bloggername,
+          bloggerLink: blog.bloggerlink,
+          postDate: blog.postdate,
+          link: blog.link
+        };
+      }
+    }
+
+    // 결과 반환
     return new Response(JSON.stringify({
       success: true,
-      book: {
+      book: bookData || {
         title: title || '',
         description: '',
         link: naverSearchUrl,
         price: null,
         discount: null
       },
-      fallback: true
+      review: reviewData
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('Naver Book API error:', error);
-    // 에러 시에도 검색 링크 반환
+    console.error('Naver API error:', error);
     return new Response(JSON.stringify({
       success: true,
       book: {
@@ -130,6 +140,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         price: null,
         discount: null
       },
+      review: null,
       fallback: true
     }), {
       status: 200,
