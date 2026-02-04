@@ -1,0 +1,7 @@
+name = "library-insights"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "./dist"
+
+[vars]
+# Production 환경 변수는 Cloudflare 대시보드에서 설정
+# 로컬 개발용 변수는 .dev.vars 파일에 설정

@@ -1,0 +1,14 @@
+# 이 파일을 .dev.vars로 복사하고 실제 값을 입력하세요
+# cp .dev.vars.example .dev.vars
+
+# 도서관 정보나루 API
+DATA4LIBRARY_API_KEY=your_data4library_api_key
+
+# 네이버 개발자 API
+NAVER_CLIENT_ID=your_naver_client_id
+NAVER_CLIENT_SECRET=your_naver_client_secret
+
+# Supabase
+PUBLIC_SUPABASE_URL=your_supabase_url
+PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+SUPABASE_SECRET_KEY=your_supabase_service_role_key
