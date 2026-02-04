@@ -1,0 +1,3 @@
+# Example: Allow all bots to scan and index your site.
+User-agent: *
+Allow: /

@@ -1,0 +1,83 @@
+import type { APIRoute } from 'astro';
+
+export const prerender = false;
+
+export const GET: APIRoute = async ({ request }) => {
+  const url = new URL(request.url);
+  const isbn = url.searchParams.get('isbn') || '';
+  const title = url.searchParams.get('title') || '';
+
+  if (!isbn && !title) {
+    return new Response(JSON.stringify({ error: 'ISBN or title is required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const clientId = import.meta.env.NAVER_CLIENT_ID;
+  const clientSecret = import.meta.env.NAVER_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    return new Response(JSON.stringify({ error: 'Naver API not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    // 네이버 책 검색 API - ISBN으로 검색하거나 제목으로 검색
+    const query = isbn ? `isbn:${isbn.replace(/-/g, '')}` : title;
+    const apiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=1`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Naver API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // 검색 결과가 있으면 첫 번째 결과 반환
+    if (data.items && data.items.length > 0) {
+      const book = data.items[0];
+      return new Response(JSON.stringify({
+        success: true,
+        book: {
+          title: book.title?.replace(/<[^>]*>/g, ''), // HTML 태그 제거
+          author: book.author?.replace(/<[^>]*>/g, ''),
+          publisher: book.publisher,
+          pubdate: book.pubdate,
+          description: book.description?.replace(/<[^>]*>/g, ''),
+          isbn: book.isbn,
+          image: book.image,
+          link: book.link, // 네이버 책 상세 페이지 링크
+          discount: book.discount, // 판매가
+          price: book.price // 정가
+        }
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Book not found'
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Naver Book API error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch book detail' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+};
