@@ -71,18 +71,22 @@ import { regions as regionsData } from '../data/regions.js';
 </header>
 <main class="flex-1">
 <!-- Page Header -->
-<div class="w-full flex justify-center py-6 sm:py-10 bg-gradient-to-b from-primary/10 to-transparent">
-<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10">
-<div class="flex items-center gap-2 mb-2">
-<a href="/" class="text-charcoal/60 dark:text-white/60 hover:text-primary transition-colors text-sm flex items-center gap-1">
+<div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+<!-- Background Image -->
+<div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+<!-- Overlay -->
+<div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+<div class="flex items-center gap-2 mb-3">
+<a href="/" class="text-white/70 hover:text-primary transition-colors text-sm flex items-center gap-1">
 <span class="material-symbols-outlined text-sm">home</span>
 홈
 </a>
-<span class="text-charcoal/40 dark:text-white/40">/</span>
-<span class="text-charcoal dark:text-white text-sm">인기 도서</span>
+<span class="text-white/50">/</span>
+<span class="text-white text-sm">인기 도서</span>
 </div>
-<h1 class="text-charcoal dark:text-white text-2xl sm:text-4xl font-bold leading-tight tracking-[-0.015em] font-display">인기 도서</h1>
-<p class="text-charcoal/60 dark:text-white/60 text-sm sm:text-base mt-2">전국 공공도서관의 인기 도서와 급상승 도서를 확인하세요.</p>
+<h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">인기 도서</h1>
+<p class="text-white/80 text-sm sm:text-lg mt-3 max-w-2xl">전국 공공도서관의 인기 도서와 급상승 도서를 확인하세요.</p>
 </div>
 </div>
 
