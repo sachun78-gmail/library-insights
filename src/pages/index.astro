@@ -56,18 +56,23 @@ import { regions as regionsData } from '../data/regions.js';
 <span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
 </button>
 <!-- Dropdown Menu -->
-<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-lg shadow-xl border border-charcoal/10 dark:border-white/10 py-2 min-w-[200px] z-50">
-<div class="px-4 py-2 border-b border-charcoal/10 dark:border-white/10">
-<p id="dropdown-email" class="text-sm text-charcoal/60 dark:text-white/60 truncate"></p>
+<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+<!-- Profile Header -->
+<div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+<img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+<p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
 </div>
-<button id="signout-btn" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
-<span class="material-symbols-outlined text-sm">logout</span>
-Sign Out
+<!-- Menu Items -->
+<div class="py-2">
+<a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">person</span>
+마이 페이지
+</a>
+<button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+로그아웃
 </button>
-<button id="delete-account-btn" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-<span class="material-symbols-outlined text-sm">person_remove</span>
-Delete Account
-</button>
+</div>
 </div>
 </div>
 </div>

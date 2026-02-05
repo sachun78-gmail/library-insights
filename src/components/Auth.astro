@@ -1,5 +1,96 @@
 ---
+import { regions } from '../data/regions.js';
 ---
+<!-- Profile Completion Modal -->
+<div id="profile-complete-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="text-center mb-6">
+      <span class="material-symbols-outlined text-primary text-5xl mb-2">person_add</span>
+      <h3 class="text-xl font-bold text-charcoal dark:text-white">프로필 완성하기</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">추가 정보를 입력해주세요</p>
+    </div>
+
+    <form id="profile-complete-form" class="flex flex-col gap-4">
+      <!-- Profile Image -->
+      <div class="flex flex-col items-center gap-2">
+        <div class="relative">
+          <img id="profile-preview" src="https://ui-avatars.com/api/?name=User&background=F4CE14&color=1A1A1A&size=96" alt="Profile" class="w-24 h-24 rounded-full object-cover border-4 border-primary" />
+          <label for="profile-image-input" class="absolute bottom-0 right-0 bg-primary text-charcoal rounded-full p-1.5 cursor-pointer hover:bg-primary/80 transition-colors">
+            <span class="material-symbols-outlined text-sm">photo_camera</span>
+          </label>
+          <input type="file" id="profile-image-input" accept="image/*" class="hidden" />
+        </div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">프로필 이미지 (선택)</span>
+      </div>
+
+      <!-- Birth Date -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">생년월일</label>
+        <input
+          type="date"
+          id="profile-birthdate"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        />
+      </div>
+
+      <!-- Gender -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">성별</label>
+        <select
+          id="profile-gender"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        >
+          <option value="">선택하세요</option>
+          <option value="male">남성</option>
+          <option value="female">여성</option>
+          <option value="other">기타</option>
+        </select>
+      </div>
+
+      <!-- Region -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">지역</label>
+        <select
+          id="profile-region"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        >
+          <option value="">선택하세요</option>
+        </select>
+      </div>
+
+      <!-- Sub Region -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">세부 지역</label>
+        <select
+          id="profile-subregion"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+          disabled
+        >
+          <option value="">먼저 지역을 선택하세요</option>
+        </select>
+      </div>
+
+      <p id="profile-complete-message" class="text-center text-sm hidden"></p>
+
+      <div class="flex gap-3 mt-2">
+        <button
+          type="button"
+          id="profile-skip-btn"
+          class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-charcoal-600 text-charcoal dark:text-white hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+        >
+          나중에
+        </button>
+        <button
+          type="submit"
+          class="flex-1 bg-primary text-charcoal font-bold px-4 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          저장하기
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Delete Account Confirmation Modal -->
 <div id="delete-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
   <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
@@ -127,8 +218,171 @@
 
 <script>
   import { supabase, isAuthEnabled } from '../lib/supabase';
+  import { regions as regionsData } from '../data/regions.js';
 
   const authContainer = document.getElementById('auth-container');
+
+  // Profile completion modal elements
+  const profileCompleteModal = document.getElementById('profile-complete-modal');
+  const profileCompleteForm = document.getElementById('profile-complete-form');
+  const profilePreview = document.getElementById('profile-preview');
+  const profileImageInput = document.getElementById('profile-image-input');
+  const profileBirthdate = document.getElementById('profile-birthdate');
+  const profileGender = document.getElementById('profile-gender');
+  const profileRegion = document.getElementById('profile-region');
+  const profileSubregion = document.getElementById('profile-subregion');
+  const profileSkipBtn = document.getElementById('profile-skip-btn');
+  const profileCompleteMessage = document.getElementById('profile-complete-message');
+
+  let profileImageBase64 = null;
+
+  // Populate region select
+  if (profileRegion) {
+    regionsData.forEach(region => {
+      const option = document.createElement('option');
+      option.value = region.code;
+      option.textContent = region.name;
+      profileRegion.appendChild(option);
+    });
+
+    profileRegion.addEventListener('change', (e) => {
+      const selectedRegion = regionsData.find(r => r.code === e.target.value);
+      profileSubregion.innerHTML = '<option value="">선택하세요</option>';
+
+      if (selectedRegion && selectedRegion.subRegions) {
+        profileSubregion.disabled = false;
+        selectedRegion.subRegions.forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub.code;
+          option.textContent = sub.name;
+          profileSubregion.appendChild(option);
+        });
+      } else {
+        profileSubregion.disabled = true;
+        profileSubregion.innerHTML = '<option value="">먼저 지역을 선택하세요</option>';
+      }
+    });
+  }
+
+  // Handle profile image selection
+  if (profileImageInput) {
+    profileImageInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          profileImageBase64 = event.target?.result;
+          if (profilePreview) {
+            profilePreview.src = profileImageBase64;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Skip profile completion
+  if (profileSkipBtn) {
+    profileSkipBtn.addEventListener('click', () => {
+      profileCompleteModal?.classList.add('hidden');
+      localStorage.setItem('profileSkipped', 'true');
+    });
+  }
+
+  // Submit profile completion form
+  if (profileCompleteForm) {
+    profileCompleteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      profileCompleteMessage?.classList.add('hidden');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        profileCompleteMessage.textContent = '로그인이 필요합니다.';
+        profileCompleteMessage?.classList.remove('hidden');
+        profileCompleteMessage?.classList.add('text-red-500');
+        return;
+      }
+
+      const birthDate = profileBirthdate?.value || null;
+      const gender = profileGender?.value || null;
+      const regionCode = profileRegion?.value || null;
+      const regionName = profileRegion?.options[profileRegion.selectedIndex]?.text || null;
+      const subRegionCode = profileSubregion?.value || null;
+      const subRegionName = profileSubregion?.value ? profileSubregion?.options[profileSubregion.selectedIndex]?.text : null;
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            birthDate,
+            gender,
+            regionCode,
+            regionName: regionCode ? regionName : null,
+            subRegionCode,
+            subRegionName,
+            avatarUrl: profileImageBase64 || null,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          profileCompleteMessage.textContent = '프로필이 저장되었습니다!';
+          profileCompleteMessage?.classList.remove('hidden');
+          profileCompleteMessage?.classList.remove('text-red-500');
+          profileCompleteMessage?.classList.add('text-green-500');
+
+          localStorage.removeItem('profileSkipped');
+
+          setTimeout(() => {
+            profileCompleteModal?.classList.add('hidden');
+            window.location.reload();
+          }, 1500);
+        } else {
+          throw new Error(result.error || '저장에 실패했습니다.');
+        }
+      } catch (error) {
+        profileCompleteMessage.textContent = error.message;
+        profileCompleteMessage?.classList.remove('hidden');
+        profileCompleteMessage?.classList.add('text-red-500');
+      }
+    });
+  }
+
+  // Check if profile needs completion
+  async function checkProfileCompletion() {
+    if (!isAuthEnabled) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Skip if user already skipped
+    if (localStorage.getItem('profileSkipped') === 'true') return;
+
+    try {
+      const response = await fetch(`/api/profile?userId=${user.id}`);
+      const result = await response.json();
+
+      // Show modal if no profile exists
+      if (!result.profile) {
+        profileCompleteModal?.classList.remove('hidden');
+
+        // Pre-fill with user metadata if available
+        const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        if (avatar && profilePreview) {
+          profilePreview.src = avatar;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+    }
+  }
+
+  // Check profile on load
+  setTimeout(checkProfileCompletion, 1000);
   const closeAuthButton = document.getElementById('close-auth');
   const authMessage = document.getElementById('auth-message');
   const googleSignInBtn = document.getElementById('google-signin-btn');
@@ -147,7 +401,8 @@
   const profileDropdown = document.getElementById('profile-dropdown');
   const profileAvatar = document.getElementById('profile-avatar');
   const profileName = document.getElementById('profile-name');
-  const dropdownEmail = document.getElementById('dropdown-email');
+  const dropdownAvatar = document.getElementById('dropdown-avatar');
+  const dropdownName = document.getElementById('dropdown-name');
   const signOutBtn = document.getElementById('signout-btn');
 
   // Check auth state and update UI
@@ -165,15 +420,11 @@
       const email = user.email;
 
       if (profileName) profileName.textContent = name;
-      if (dropdownEmail) dropdownEmail.textContent = email;
-      if (profileAvatar) {
-        if (avatar) {
-          profileAvatar.src = avatar;
-        } else {
-          // Default avatar with initials
-          profileAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A`;
-        }
-      }
+      if (dropdownName) dropdownName.textContent = name;
+
+      const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A`;
+      if (profileAvatar) profileAvatar.src = avatarUrl;
+      if (dropdownAvatar) dropdownAvatar.src = avatarUrl;
     } else {
       // User is logged out
       signInButton?.classList.remove('hidden');
