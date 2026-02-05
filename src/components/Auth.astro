@@ -126,7 +126,7 @@
 </div>
 
 <script>
-  import { supabase } from '../lib/supabase';
+  import { supabase, isAuthEnabled } from '../lib/supabase';
 
   const authContainer = document.getElementById('auth-container');
   const closeAuthButton = document.getElementById('close-auth');
@@ -319,6 +319,10 @@
   // Open auth modal
   if (signInButton) {
     signInButton.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
       authContainer.classList.remove('hidden');
       switchToSignIn();
     });

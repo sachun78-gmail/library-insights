@@ -8,6 +8,7 @@ import { regions as regionsData } from '../data/regions.js';
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>LibraryInsights - South Korean Public Library Bestsellers</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <Analytics />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
@@ -35,12 +36,10 @@ import { regions as regionsData } from '../data/regions.js';
 <!-- Top Navigation Bar -->
 <header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
 <div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
-<div class="flex items-center gap-1.5 sm:gap-4 text-charcoal dark:text-white min-w-0">
-<div class="size-5 sm:size-6 text-primary flex-shrink-0">
-<span class="material-symbols-outlined text-xl sm:text-3xl">auto_stories</span>
-</div>
-<h2 class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-tight tracking-[-0.015em] font-display truncate">LibraryInsights</h2>
-</div>
+<a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0">
+<span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+<span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+</a>
 <div class="flex justify-end gap-2 sm:gap-8 ml-2">
 <nav class="hidden md:flex items-center gap-9">
 <a class="text-charcoal dark:text-white text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
