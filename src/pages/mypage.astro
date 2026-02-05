@@ -283,12 +283,68 @@ import Analytics from '../components/Analytics.astro';
     });
   }
 
-  // Edit profile button click - show profile completion modal
+  // Edit profile button click - show profile completion modal with existing data
   if (editProfileBtn) {
-    editProfileBtn.addEventListener('click', () => {
+    editProfileBtn.addEventListener('click', async () => {
       localStorage.removeItem('profileSkipped');
-      const profileCompleteModal = document.getElementById('profile-complete-modal');
-      profileCompleteModal?.classList.remove('hidden');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load existing profile data
+      try {
+        const response = await fetch(`/api/profile?userId=${user.id}`);
+        const result = await response.json();
+
+        const profileCompleteModal = document.getElementById('profile-complete-modal');
+        const profilePreview = document.getElementById('profile-preview') as HTMLImageElement;
+        const profileBirthdate = document.getElementById('profile-birthdate') as HTMLInputElement;
+        const profileGender = document.getElementById('profile-gender') as HTMLSelectElement;
+        const profileRegion = document.getElementById('profile-region') as HTMLSelectElement;
+        const profileSubregion = document.getElementById('profile-subregion') as HTMLSelectElement;
+
+        if (result.profile) {
+          const profile = result.profile;
+
+          // Pre-fill avatar
+          if (profile.avatar_url && profilePreview) {
+            profilePreview.src = profile.avatar_url;
+          } else if (user.user_metadata?.avatar_url && profilePreview) {
+            profilePreview.src = user.user_metadata.avatar_url;
+          }
+
+          // Pre-fill birth date
+          if (profile.birth_date && profileBirthdate) {
+            profileBirthdate.value = profile.birth_date;
+          }
+
+          // Pre-fill gender
+          if (profile.gender && profileGender) {
+            profileGender.value = profile.gender;
+          }
+
+          // Pre-fill region
+          if (profile.region_code && profileRegion) {
+            profileRegion.value = profile.region_code;
+            // Trigger change event to populate sub-regions
+            profileRegion.dispatchEvent(new Event('change'));
+
+            // Wait a bit for sub-regions to populate, then set the value
+            setTimeout(() => {
+              if (profile.sub_region_code && profileSubregion) {
+                profileSubregion.value = profile.sub_region_code;
+              }
+            }, 100);
+          }
+        }
+
+        profileCompleteModal?.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading profile for edit:', error);
+        // Still show modal even if loading fails
+        const profileCompleteModal = document.getElementById('profile-complete-modal');
+        profileCompleteModal?.classList.remove('hidden');
+      }
     });
   }
 </script>
