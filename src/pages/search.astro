@@ -1,5 +1,6 @@
 ---
 import Auth from '../components/Auth.astro';
+import Analytics from '../components/Analytics.astro';
 import { regions as regionsData } from '../data/regions.js';
 ---
 <html lang="ko">
@@ -7,6 +8,7 @@ import { regions as regionsData } from '../data/regions.js';
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>검색 결과 - LibraryInsights</title>
+  <Analytics />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
   <style>
@@ -133,9 +135,55 @@ import { regions as regionsData } from '../data/regions.js';
       </main>
 
       <!-- Footer -->
-      <footer class="bg-charcoal text-white/80 py-4 sm:py-8 px-3 sm:px-6 md:px-20 lg:px-40">
-        <div class="max-w-[1200px] mx-auto text-center text-xs sm:text-sm text-white/40">
-          © 2024 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+      <footer class="bg-[#1a1a1a] text-white/70">
+        <!-- Top Row: Links -->
+        <div class="border-b border-white/10">
+          <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+            <nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+              <button id="terms-btn" class="hover:text-white transition-colors">이용약관</button>
+              <button id="privacy-btn" class="hover:text-white transition-colors">개인정보처리방침</button>
+              <button id="sitemap-btn" class="hover:text-white transition-colors">사이트맵</button>
+            </nav>
+            <div class="relative">
+              <select class="bg-transparent border border-white/20 rounded px-3 py-1.5 text-xs sm:text-sm text-white/70 focus:outline-none focus:border-white/40 cursor-pointer appearance-none pr-8">
+                <option value="" class="bg-[#1a1a1a]">유관 사이트</option>
+                <option value="https://www.nl.go.kr" class="bg-[#1a1a1a]">국립중앙도서관</option>
+                <option value="https://www.data4library.kr" class="bg-[#1a1a1a]">도서관 정보나루</option>
+                <option value="https://www.mcst.go.kr" class="bg-[#1a1a1a]">문화체육관광부</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none">expand_more</span>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom Row: Logo & Copyright -->
+        <div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            <!-- Logo -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+                <div class="w-6 h-6 bg-white rounded-full"></div>
+              </div>
+              <div class="flex flex-col text-xs sm:text-sm">
+                <span class="text-white/50">문화체육관광부</span>
+                <span class="text-white font-bold">국립중앙도서관</span>
+              </div>
+            </div>
+            <!-- Contact Info -->
+            <div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+              <a href="tel:02-595-6131" class="flex items-center gap-1.5 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">call</span>
+                02-595-6131
+              </a>
+              <a href="mailto:libdata@korea.kr" class="flex items-center gap-1.5 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">mail</span>
+                libdata@korea.kr
+              </a>
+            </div>
+          </div>
+          <!-- Copyright -->
+          <p class="text-xs sm:text-sm text-white/50">
+            © National Library of Korea. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
@@ -303,12 +351,84 @@ import { regions as regionsData } from '../data/regions.js';
     </div>
   </div>
 
+  <!-- Terms of Service Modal -->
+  <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">도서관 정보나루 이용약관</h2>
+        <button id="close-terms-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+        <h3 class="font-bold text-charcoal dark:text-white mb-4">제1장 총칙</h3>
+        <p class="mb-3">이 약관은 국립중앙도서관이 운영하는 도서관 빅데이터 분석플랫폼의 서비스 이용 조건을 규정합니다.</p>
+        <h3 class="font-bold text-charcoal dark:text-white mt-4 mb-2">주요 내용</h3>
+        <ul class="list-disc list-inside space-y-1">
+          <li>이용계약의 체결 및 회원가입</li>
+          <li>서비스의 이용 및 저작권</li>
+          <li>계약 당사자의 의무</li>
+          <li>손해배상 및 면책</li>
+        </ul>
+        <p class="mt-4 text-xs text-charcoal/60 dark:text-white/60">부칙: 2019년 7월 17일부터 적용</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sitemap Modal -->
+  <div id="sitemap-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-lg w-full relative">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">사이트맵</h2>
+        <button id="close-sitemap-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <nav class="space-y-4">
+          <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">home</span>홈
+          </a>
+          <a href="/bestsellers" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">star</span>인기 도서
+          </a>
+          <a href="/search" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">search</span>검색
+          </a>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Policy Modal -->
+  <div id="privacy-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">개인정보처리방침</h2>
+        <button id="close-privacy-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+        <p class="mb-4">국립중앙도서관은 개인정보를 적법하게 처리하고 안전하게 관리합니다.</p>
+        <h3 class="font-bold text-charcoal dark:text-white mt-4 mb-2">주요 내용</h3>
+        <ul class="list-disc list-inside space-y-1">
+          <li>개인정보의 처리 목적 및 수집 항목</li>
+          <li>보유 및 이용기간</li>
+          <li>정보주체의 권리</li>
+        </ul>
+        <p class="mt-4"><strong>개인정보 보호책임자:</strong> 02-590-0719</p>
+      </div>
+    </div>
+  </div>
+
   <Auth />
 
   <script define:vars={{ regionsData }}>
     // Get search keyword from URL
     const urlParams = new URLSearchParams(window.location.search);
     const keyword = urlParams.get('q') || '';
+    const isbnParam = urlParams.get('isbn') || '';
     let currentPage = parseInt(urlParams.get('page') || '1');
     const pageSize = 12;
 
@@ -366,8 +486,9 @@ import { regions as regionsData } from '../data/regions.js';
     const reviewLink = document.getElementById('review-link');
 
     // Set search keyword in UI
-    if (searchKeywordEl) searchKeywordEl.textContent = `"${keyword}"`;
-    if (headerSearchInput) headerSearchInput.value = keyword;
+    const displayKeyword = isbnParam ? `ISBN: ${isbnParam}` : keyword;
+    if (searchKeywordEl) searchKeywordEl.textContent = `"${displayKeyword}"`;
+    if (headerSearchInput) headerSearchInput.value = keyword || isbnParam;
 
     // Header search form
     headerSearchForm?.addEventListener('submit', (e) => {
@@ -670,8 +791,8 @@ import { regions as regionsData } from '../data/regions.js';
     window.openBookModal = openBookModal;
 
     // Search function
-    async function performSearch(page = 1) {
-      if (!keyword) {
+    async function performSearch(page = 1, autoOpenModal = false) {
+      if (!keyword && !isbnParam) {
         window.location.href = '/';
         return;
       }
@@ -684,7 +805,14 @@ import { regions as regionsData } from '../data/regions.js';
       pagination?.classList.add('hidden');
 
       try {
-        const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}&pageNo=${page}&pageSize=${pageSize}`);
+        let apiUrl;
+        if (isbnParam) {
+          // Search by ISBN
+          apiUrl = `/api/search?isbn=${encodeURIComponent(isbnParam)}&pageNo=${page}&pageSize=${pageSize}`;
+        } else {
+          apiUrl = `/api/search?keyword=${encodeURIComponent(keyword)}&pageNo=${page}&pageSize=${pageSize}`;
+        }
+        const response = await fetch(apiUrl);
         const data = await response.json();
 
         loadingState?.classList.add('hidden');
@@ -764,6 +892,11 @@ import { regions as regionsData } from '../data/regions.js';
           currentPage = page;
         }
 
+        // Auto-open modal for ISBN search
+        if (autoOpenModal && currentBooks.length > 0) {
+          openBookModal(0);
+        }
+
       } catch (error) {
         loadingState?.classList.add('hidden');
         errorState?.classList.remove('hidden');
@@ -788,7 +921,32 @@ import { regions as regionsData } from '../data/regions.js';
     });
 
     // Initial search
-    performSearch(currentPage);
+    performSearch(currentPage, !!isbnParam);
+
+    // ========================================
+    // Footer Modals
+    // ========================================
+    const termsBtn = document.getElementById('terms-btn');
+    const termsModal = document.getElementById('terms-modal');
+    const closeTermsModal = document.getElementById('close-terms-modal');
+    const privacyBtn = document.getElementById('privacy-btn');
+    const privacyModal = document.getElementById('privacy-modal');
+    const closePrivacyModal = document.getElementById('close-privacy-modal');
+    const sitemapBtn = document.getElementById('sitemap-btn');
+    const sitemapModal = document.getElementById('sitemap-modal');
+    const closeSitemapModal = document.getElementById('close-sitemap-modal');
+
+    termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
+    closeTermsModal?.addEventListener('click', () => termsModal?.classList.add('hidden'));
+    termsModal?.addEventListener('click', (e) => { if (e.target === termsModal) termsModal.classList.add('hidden'); });
+
+    privacyBtn?.addEventListener('click', () => privacyModal?.classList.remove('hidden'));
+    closePrivacyModal?.addEventListener('click', () => privacyModal?.classList.add('hidden'));
+    privacyModal?.addEventListener('click', (e) => { if (e.target === privacyModal) privacyModal.classList.add('hidden'); });
+
+    sitemapBtn?.addEventListener('click', () => sitemapModal?.classList.remove('hidden'));
+    closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
+    sitemapModal?.addEventListener('click', (e) => { if (e.target === sitemapModal) sitemapModal.classList.add('hidden'); });
   </script>
 </body>
 </html>

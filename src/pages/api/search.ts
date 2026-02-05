@@ -15,11 +15,12 @@ function getEnvVar(locals: any, key: string): string | undefined {
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const keyword = url.searchParams.get('keyword') || '';
+  const isbn = url.searchParams.get('isbn') || '';
   const pageNo = url.searchParams.get('pageNo') || '1';
   const pageSize = url.searchParams.get('pageSize') || '10';
 
-  if (!keyword) {
-    return new Response(JSON.stringify({ error: 'Keyword is required' }), {
+  if (!keyword && !isbn) {
+    return new Response(JSON.stringify({ error: 'Keyword or ISBN is required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -36,7 +37,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
   try {
     // 도서관 정보나루 도서 검색 API (HTTPS 필수 - Cloudflare)
-    const apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&title=${encodeURIComponent(keyword)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+    let apiUrl;
+    if (isbn) {
+      // ISBN search
+      apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&isbn=${encodeURIComponent(isbn)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+    } else {
+      // Keyword search
+      apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&title=${encodeURIComponent(keyword)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+    }
 
     const response = await fetch(apiUrl);
     const data = await response.json();
