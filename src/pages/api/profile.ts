@@ -3,6 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
+// Create admin client that bypasses RLS
+function createAdminClient(url: string, serviceKey: string) {
+  return createClient(url, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const userId = url.searchParams.get('userId');
@@ -20,13 +30,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return new Response(JSON.stringify({ error: 'Supabase not configured' }), {
+    return new Response(JSON.stringify({
+      error: 'Supabase not configured',
+      debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createAdminClient(supabaseUrl, supabaseKey);
 
   try {
     const { data, error } = await supabase
@@ -58,13 +71,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return new Response(JSON.stringify({ error: 'Supabase not configured' }), {
+    return new Response(JSON.stringify({
+      error: 'Supabase not configured',
+      debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createAdminClient(supabaseUrl, supabaseKey);
 
   try {
     const body = await request.json();
