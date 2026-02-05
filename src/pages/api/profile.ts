@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const userId = url.searchParams.get('userId');
 
@@ -14,8 +14,10 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseKey = import.meta.env.SUPABASE_SECRET_KEY;
+  // Try Cloudflare runtime env first, then fall back to import.meta.env
+  const runtime = locals.runtime;
+  const supabaseUrl = runtime?.env?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return new Response(JSON.stringify({ error: 'Supabase not configured' }), {
@@ -49,9 +51,11 @@ export const GET: APIRoute = async ({ request }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseKey = import.meta.env.SUPABASE_SECRET_KEY;
+export const POST: APIRoute = async ({ request, locals }) => {
+  // Try Cloudflare runtime env first, then fall back to import.meta.env
+  const runtime = locals.runtime;
+  const supabaseUrl = runtime?.env?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return new Response(JSON.stringify({ error: 'Supabase not configured' }), {

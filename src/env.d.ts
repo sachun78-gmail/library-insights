@@ -19,6 +19,8 @@ interface R2Object {
 
 interface Env {
   R2_BUCKET: R2Bucket;
+  SUPABASE_URL: string;
+  SUPABASE_SECRET_KEY: string;
 }
 
 declare namespace App {
