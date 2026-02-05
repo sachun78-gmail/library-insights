@@ -234,7 +234,7 @@ import { regions } from '../data/regions.js';
   const profileSkipBtn = document.getElementById('profile-skip-btn');
   const profileCompleteMessage = document.getElementById('profile-complete-message');
 
-  let profileImageBase64 = null;
+  let profileImageFile = null;
 
   // Populate region select
   if (profileRegion) {
@@ -269,11 +269,12 @@ import { regions } from '../data/regions.js';
     profileImageInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file) {
+        profileImageFile = file;
+        // Preview the image
         const reader = new FileReader();
         reader.onload = (event) => {
-          profileImageBase64 = event.target?.result;
           if (profilePreview) {
-            profilePreview.src = profileImageBase64;
+            profilePreview.src = event.target?.result;
           }
         };
         reader.readAsDataURL(file);
@@ -311,6 +312,35 @@ import { regions } from '../data/regions.js';
       const subRegionName = profileSubregion?.value ? profileSubregion?.options[profileSubregion.selectedIndex]?.text : null;
 
       try {
+        let avatarUrl = null;
+
+        // Upload image to R2 if selected
+        if (profileImageFile) {
+          profileCompleteMessage.textContent = '이미지 업로드 중...';
+          profileCompleteMessage?.classList.remove('hidden');
+          profileCompleteMessage?.classList.remove('text-red-500');
+          profileCompleteMessage?.classList.add('text-gray-500');
+
+          const formData = new FormData();
+          formData.append('file', profileImageFile);
+          formData.append('userId', user.id);
+
+          const uploadResponse = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const uploadResult = await uploadResponse.json();
+
+          if (!uploadResponse.ok) {
+            throw new Error(uploadResult.error || '이미지 업로드에 실패했습니다.');
+          }
+
+          avatarUrl = uploadResult.url;
+        }
+
+        profileCompleteMessage.textContent = '프로필 저장 중...';
+
         const response = await fetch('/api/profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -322,7 +352,7 @@ import { regions } from '../data/regions.js';
             regionName: regionCode ? regionName : null,
             subRegionCode,
             subRegionName,
-            avatarUrl: profileImageBase64 || null,
+            avatarUrl,
           }),
         });
 
@@ -332,6 +362,7 @@ import { regions } from '../data/regions.js';
           profileCompleteMessage.textContent = '프로필이 저장되었습니다!';
           profileCompleteMessage?.classList.remove('hidden');
           profileCompleteMessage?.classList.remove('text-red-500');
+          profileCompleteMessage?.classList.remove('text-gray-500');
           profileCompleteMessage?.classList.add('text-green-500');
 
           localStorage.removeItem('profileSkipped');
@@ -346,6 +377,7 @@ import { regions } from '../data/regions.js';
       } catch (error) {
         profileCompleteMessage.textContent = error.message;
         profileCompleteMessage?.classList.remove('hidden');
+        profileCompleteMessage?.classList.remove('text-gray-500');
         profileCompleteMessage?.classList.add('text-red-500');
       }
     });
