@@ -11,10 +11,10 @@ import { regions as regionsData } from '../data/regions.js';
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <Analytics />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
+<link href="/fonts.css" rel="stylesheet"/>
   <style>
     body {
-      font-family: 'Noto Serif', serif;
+      font-family: 'YUniverse', sans-serif;
     }
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -40,69 +40,74 @@ import { regions as regionsData } from '../data/regions.js';
   <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
     <div class="layout-container flex h-full grow flex-col">
       <!-- Top Navigation Bar -->
-      <header class="flex items-center justify-between border-b border-solid border-charcoal/10 dark:border-white/10 px-2 sm:px-6 md:px-20 lg:px-40 py-2 sm:py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
-        <a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0 flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
-          <span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
-        </a>
-        <div class="flex flex-1 justify-end gap-2 sm:gap-4 ml-2">
-          <!-- Search Bar in Header -->
-          <form id="header-search-form" class="hidden md:flex items-center">
-            <div class="flex items-stretch rounded-lg overflow-hidden border border-charcoal/10 dark:border-white/10">
-              <input
-                type="text"
-                id="header-search-input"
-                class="px-4 py-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm focus:outline-none w-64"
-                placeholder="도서 검색..."
-              />
-              <button type="submit" class="px-4 bg-primary text-charcoal hover:bg-primary/90 transition-colors">
-                <span class="material-symbols-outlined text-sm">search</span>
-              </button>
-            </div>
-          </form>
-          <!-- Sign In / Profile -->
-          <button id="signin-btn" class="flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
-            <span class="truncate">Sign In</span>
+      <header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+  <div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+    <a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0 flex-shrink-0">
+      <span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+      <span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+    </a>
+    <div class="flex flex-1 justify-end gap-2 sm:gap-4 ml-2">
+      <!-- Search Bar in Header -->
+      <form id="header-search-form" class="hidden md:flex items-center">
+        <div class="flex items-stretch rounded-lg overflow-hidden border border-charcoal/10 dark:border-white/10">
+          <input
+            type="text"
+            id="header-search-input"
+            class="px-4 py-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm focus:outline-none w-64"
+            placeholder="?꾩꽌 寃??.."
+          />
+          <button type="submit" class="px-4 bg-primary text-charcoal hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-sm">search</span>
           </button>
-          <div id="profile-container" class="hidden relative">
-            <button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
-              <img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
-              <span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
-              <span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+        </div>
+      </form>
+      <!-- Sign In / Profile -->
+      <button id="signin-btn" class="flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+        <span class="truncate">Sign In</span>
+      </button>
+      <div id="profile-container" class="hidden relative">
+        <button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+          <img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+          <span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+          <span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+        </button>
+        <div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+          <!-- Profile Header -->
+          <div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+            <img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+            <p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+          </div>
+          <!-- Menu Items -->
+          <div class="py-2">
+            <a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+              <span class="material-symbols-outlined text-lg">person</span>
+              留덉씠 ?섏씠吏
+            </a>
+            <button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+              <span class="material-symbols-outlined text-lg">logout</span>
+              濡쒓렇?꾩썐
             </button>
-            <div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
-              <!-- Profile Header -->
-              <div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
-                <img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
-                <p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
-              </div>
-              <!-- Menu Items -->
-              <div class="py-2">
-                <a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
-                  <span class="material-symbols-outlined text-lg">person</span>
-                  마이 페이지
-                </a>
-                <button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
-                  <span class="material-symbols-outlined text-lg">logout</span>
-                  로그아웃
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-      </header>
+      </div>
+    </div>
+  </div>
+</header>
 
-      <main class="flex-1 py-4 sm:py-8 px-3 sm:px-6 md:px-20 lg:px-40">
-        <div class="max-w-[1200px] mx-auto">
-          <!-- Search Info -->
-          <div class="mb-4 sm:mb-8">
-            <h1 class="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">
-              <span id="search-keyword" class="text-primary"></span> 검색 결과
-            </h1>
-            <p id="result-count" class="text-sm sm:text-base text-charcoal/60 dark:text-white/60"></p>
-          </div>
+      <main class="flex-1">
+  <div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+    <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+      <h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">
+        <span id="search-keyword" class="text-primary"></span> 검색 결과
+      </h1>
+      <p id="result-count" class="text-white/80 text-sm sm:text-lg mt-3"></p>
+    </div>
+  </div>
 
-          <!-- Loading State -->
+  <div class="w-full flex justify-center py-4 sm:py-8">
+    <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10"><!-- Loading State -->
           <div id="loading-state" class="hidden flex flex-col items-center justify-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
             <p class="text-charcoal/60 dark:text-white/60">검색 중...</p>
@@ -135,6 +140,8 @@ import { regions as regionsData } from '../data/regions.js';
               <span class="material-symbols-outlined text-lg sm:text-2xl">chevron_right</span>
             </button>
           </div>
+        </div>
+        </div>
         </div>
       </main>
 

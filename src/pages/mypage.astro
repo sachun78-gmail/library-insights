@@ -10,10 +10,10 @@ import Analytics from '../components/Analytics.astro';
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <Analytics />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
+<link href="/fonts.css" rel="stylesheet"/>
 <style>
   body {
-    font-family: 'Noto Serif', serif;
+    font-family: 'YUniverse', sans-serif;
   }
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -32,7 +32,7 @@ import Analytics from '../components/Analytics.astro';
 </a>
 <div class="flex justify-end gap-2 sm:gap-8 ml-2">
 <nav class="hidden md:flex items-center gap-9">
-<a class="text-charcoal dark:text-white text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-charcoal dark:text-white text-sm font-medium leading-normal hover:text-primary transition-colors" href="/">Home</a>
 </nav>
 <!-- Sign In Button (shown when logged out) -->
 <button id="signin-btn" class="flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
@@ -70,8 +70,19 @@ import Analytics from '../components/Analytics.astro';
 </header>
 
 <main class="flex-1">
+<div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+  <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+    <h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">마이 페이지</h1>
+    <p class="text-white/80 text-sm sm:text-lg mt-3">내 정보와 추천 기록을 확인하세요</p>
+  </div>
+</div>
+
+<div class="w-full flex justify-center py-4 sm:py-8">
+  <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10">
 <!-- My Page Content -->
-<div class="max-w-[800px] mx-auto px-4 py-8">
+    <div class="max-w-[800px] mx-auto w-full">
 <!-- Profile Section -->
 <div id="mypage-content" class="hidden">
 <div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-lg overflow-hidden">
@@ -152,6 +163,8 @@ import Analytics from '../components/Analytics.astro';
 로그인
 </button>
 </div>
+</div>
+  </div>
 </div>
 </main>
 
