@@ -29,3 +29,15 @@ npm-debug.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Wrangler
+.wrangler/
+
+# Working/reference files
+*.png
+analytics_guide/
+librarybigdata_llms.txt
+r2_llm.txt
+sample.html
+nul
+*.pdf

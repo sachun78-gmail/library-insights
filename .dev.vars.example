@@ -4,6 +4,9 @@
 # 도서관 정보나루 API
 DATA4LIBRARY_API_KEY=your_data4library_api_key
 
+# 서울열린데이터광장 API (https://data.seoul.go.kr)
+SEOUL_OPENDATA_API_KEY=your_seoul_opendata_api_key
+
 # 네이버 개발자 API
 NAVER_CLIENT_ID=your_naver_client_id
 NAVER_CLIENT_SECRET=your_naver_client_secret
