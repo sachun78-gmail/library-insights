@@ -420,6 +420,8 @@ import { regions } from '../data/regions.js';
   const googleSignInBtn = document.getElementById('google-signin-btn');
   const googleBtnText = document.getElementById('google-btn-text');
   const signInButton = document.getElementById('signin-btn');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+  const mobileSignupBtn = document.getElementById('mobile-signup-btn');
 
   // Tab elements
   const signInTab = document.getElementById('signin-tab');
@@ -436,6 +438,11 @@ import { regions } from '../data/regions.js';
   const dropdownAvatar = document.getElementById('dropdown-avatar');
   const dropdownName = document.getElementById('dropdown-name');
   const signOutBtn = document.getElementById('signout-btn');
+  const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+  const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
+  const mobileProfileName = document.getElementById('mobile-profile-name');
+  const mobileProfileAvatar = document.getElementById('mobile-profile-avatar');
+  const mobileSignoutBtn = document.getElementById('mobile-signout-btn');
 
   // Check auth state and update UI
   async function updateAuthUI() {
@@ -443,8 +450,10 @@ import { regions } from '../data/regions.js';
 
     if (user) {
       // User is logged in
-      signInButton?.classList.add('hidden');
-      profileContainer?.classList.remove('hidden');
+      signInButton?.classList.add('md:hidden');
+      profileContainer?.classList.remove('md:hidden');
+      mobileAuthLoggedOut?.classList.add('hidden');
+      mobileAuthLoggedIn?.classList.remove('hidden');
 
       // Set profile info
       const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
@@ -453,14 +462,18 @@ import { regions } from '../data/regions.js';
 
       if (profileName) profileName.textContent = name;
       if (dropdownName) dropdownName.textContent = name;
+      if (mobileProfileName) mobileProfileName.textContent = name;
 
       const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A`;
       if (profileAvatar) profileAvatar.src = avatarUrl;
       if (dropdownAvatar) dropdownAvatar.src = avatarUrl;
+      if (mobileProfileAvatar) mobileProfileAvatar.src = avatarUrl;
     } else {
       // User is logged out
-      signInButton?.classList.remove('hidden');
-      profileContainer?.classList.add('hidden');
+      signInButton?.classList.remove('md:hidden');
+      profileContainer?.classList.add('md:hidden');
+      mobileAuthLoggedOut?.classList.remove('hidden');
+      mobileAuthLoggedIn?.classList.add('hidden');
     }
   }
 
@@ -490,6 +503,13 @@ import { regions } from '../data/regions.js';
     signOutBtn.addEventListener('click', async () => {
       await supabase.auth.signOut();
       profileDropdown?.classList.add('hidden');
+      window.location.reload();
+    });
+  }
+
+  if (mobileSignoutBtn) {
+    mobileSignoutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
       window.location.reload();
     });
   }
@@ -608,6 +628,32 @@ import { regions } from '../data/regions.js';
       }
       authContainer.classList.remove('hidden');
       switchToSignIn();
+    });
+  }
+
+  if (mobileSigninBtn) {
+    mobileSigninBtn.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
+      document.getElementById('mobile-menu')?.classList.add('hidden');
+      document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+      authContainer.classList.remove('hidden');
+      switchToSignIn();
+    });
+  }
+
+  if (mobileSignupBtn) {
+    mobileSignupBtn.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
+      document.getElementById('mobile-menu')?.classList.add('hidden');
+      document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+      authContainer.classList.remove('hidden');
+      switchToSignUp();
     });
   }
 

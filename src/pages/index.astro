@@ -67,16 +67,19 @@ import { regions as regionsData } from '../data/regions.js';
 <span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
 <span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
 </a>
-<div class="flex justify-end gap-2 sm:gap-8 ml-2">
-<nav class="hidden md:flex items-center gap-9">
-<a class="text-charcoal dark:text-white text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
+<nav class="hidden md:flex items-center gap-3 sm:gap-9">
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
 </nav>
+<button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+</button>
 <!-- Sign In Button (shown when logged out) -->
-<button id="signin-btn" class="flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+<button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
 <span class="truncate">Sign In</span>
 </button>
 <!-- Profile Button (shown when logged in) -->
-<div id="profile-container" class="hidden relative">
+<div id="profile-container" class="hidden relative md:block md:hidden">
 <button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
 <img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
 <span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
@@ -103,6 +106,41 @@ import { regions as regionsData } from '../data/regions.js';
 </div>
 </div>
 </div>
+</div>
+</div>
+<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-[70] bg-black/60">
+  <div class="h-full w-[78%] max-w-xs bg-white dark:bg-charcoal-900 shadow-2xl">
+    <div class="flex items-center justify-end px-4 py-3">
+      <button id="mobile-menu-close" class="w-8 h-8 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+    <div class="px-4 pb-4 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full bg-primary/90 text-charcoal flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">person</span>
+        </div>
+      </div>
+      <div id="mobile-auth-logged-out" class="mt-4 flex items-center justify-between">
+        <button id="mobile-signup-btn" class="px-4 py-2 rounded-full bg-charcoal text-white text-xs font-bold">회원가입</button>
+        <button id="mobile-signin-btn" class="text-xs font-bold text-charcoal dark:text-white">로그인 &gt;</button>
+      </div>
+      <div id="mobile-auth-logged-in" class="hidden mt-4">
+        <div class="flex items-center gap-3">
+          <img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border border-primary" />
+          <div class="min-w-0">
+            <p id="mobile-profile-name" class="text-sm font-semibold text-charcoal dark:text-white truncate"></p>
+            <a class="text-xs text-primary hover:underline" href="/mypage">마이페이지</a>
+          </div>
+        </div>
+        <button id="mobile-signout-btn" class="mt-3 w-full rounded-lg border border-charcoal/20 dark:border-white/20 py-2 text-xs font-bold text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5">로그아웃</button>
+      </div>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+    </div>
+  </div>
 </div>
 </header>
 <main class="flex-1">
@@ -133,8 +171,20 @@ import { regions as regionsData } from '../data/regions.js';
 <!-- Today's Recommended Book (Monthly Keyword Based) -->
 <div class="w-full flex justify-center py-6 sm:py-16">
 <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-2 sm:px-4 lg:px-10">
-<div class="flex flex-col lg:flex-row gap-6">
-<div class="flex-1">
+<div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+    <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+    <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+      AdSense 728x90
+    </div>
+  </div>
+  <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+    <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+    <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+      AdSense 728x90
+    </div>
+  </div>
+</div>
 <div class="flex items-center gap-2 sm:gap-3 pb-4 sm:pb-8">
 <div class="h-6 sm:h-8 w-1 bg-primary"></div>
 <h2 class="text-charcoal dark:text-white text-lg sm:text-2xl font-bold leading-tight tracking-[-0.015em] font-display">오늘의 추천 도서</h2>
@@ -187,23 +237,6 @@ import { regions as regionsData } from '../data/regions.js';
 </div>
 
 </div>
-</div>
-<aside class="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0">
-  <div class="sticky top-24 space-y-4">
-    <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
-      <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
-      <div class="mt-3 h-[280px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
-        AdSense 300x250
-      </div>
-    </div>
-    <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
-      <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
-      <div class="mt-3 h-[600px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
-        AdSense 300x600
-      </div>
-    </div>
-  </div>
-</aside>
 </div>
 </div>
 
@@ -982,6 +1015,10 @@ sachun78@gmail.com
   const sitemapBtn = document.getElementById('sitemap-btn');
   const sitemapModal = document.getElementById('sitemap-modal');
   const closeSitemapModal = document.getElementById('close-sitemap-modal');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
 
   // Terms Modal
   termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
@@ -1002,6 +1039,30 @@ sachun78@gmail.com
   closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
   sitemapModal?.addEventListener('click', (e) => {
     if (e.target === sitemapModal) sitemapModal.classList.add('hidden');
+  });
+
+  // Mobile Menu
+  mobileMenuBtn?.addEventListener('click', () => {
+    const isOpen = mobileMenu && !mobileMenu.classList.contains('hidden');
+    if (mobileMenu) mobileMenu.classList.toggle('hidden');
+    if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  mobileMenuClose?.addEventListener('click', () => {
+    mobileMenu?.classList.add('hidden');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+  });
+
+  mobileMenu?.addEventListener('click', (e) => {
+    if (e.target === mobileMenu) {
+      mobileMenu.classList.add('hidden');
+      mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  mobileSigninBtn?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
   });
 </script>
 </body></html>
