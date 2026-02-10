@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-// Helper to get env variable (works in both local and Cloudflare)
 function getEnvVar(locals: any, key: string): string | undefined {
   if (locals?.runtime?.env?.[key]) {
     return locals.runtime.env[key];
@@ -10,19 +9,7 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return (import.meta.env as any)[key];
 }
 
-export const GET: APIRoute = async ({ request, locals }) => {
-  const url = new URL(request.url);
-  const isbn = url.searchParams.get('isbn') || '';
-  const region = url.searchParams.get('region') || '';
-  const dtlRegion = url.searchParams.get('dtl_region') || '';
-
-  if (!isbn) {
-    return new Response(JSON.stringify({ error: 'ISBN is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
+export const GET: APIRoute = async ({ locals }) => {
   const authKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
 
   if (!authKey) {
@@ -33,16 +20,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 도서관 정보나루 - 도서 소장 도서관 조회 API (HTTPS 필수 - Cloudflare)
-    let apiUrl = `https://data4library.kr/api/libSrchByBook?authKey=${authKey}&isbn=${isbn}&pageSize=100&format=json`;
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
 
-    if (region) {
-      apiUrl += `&region=${region}`;
-    }
+    const endDt = today.toISOString().split('T')[0];
+    const startDt = weekAgo.toISOString().split('T')[0];
 
-    if (dtlRegion) {
-      apiUrl += `&dtl_region=${dtlRegion}`;
-    }
+    const apiUrl = `https://data4library.kr/api/loanItemSrch?authKey=${authKey}&startDt=${startDt}&endDt=${endDt}&pageNo=1&pageSize=20&format=json`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();
@@ -52,7 +37,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Library search API error:', error);
+    console.error('New arrivals API error:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch data' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

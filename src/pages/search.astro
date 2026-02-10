@@ -1,7 +1,7 @@
 ---
 import Auth from '../components/Auth.astro';
 import Analytics from '../components/Analytics.astro';
-import { regions as regionsData } from '../data/regions.js';
+import BookDetailModal from '../components/BookDetailModal.astro';
 ---
 <html lang="ko">
 <head>
@@ -151,7 +151,7 @@ import { regions as regionsData } from '../data/regions.js';
     <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
     <div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
     <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
-      <h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">
+      <h1 id="hero-title" class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">
         <span id="search-keyword" class="text-primary"></span> 검색 결과
       </h1>
       <p id="result-count" class="text-white/80 text-sm sm:text-lg mt-3"></p>
@@ -174,11 +174,51 @@ import { regions as regionsData } from '../data/regions.js';
           </div>
         </div>
       </div>
+      <!-- AI Mode Toggle Bar -->
+      <div id="ai-mode-bar" class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-3 sm:p-4 shadow-sm">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <label for="ai-mode-toggle" class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="ai-mode-toggle" class="sr-only peer" />
+            <div class="w-9 h-5 sm:w-11 sm:h-6 bg-charcoal/20 dark:bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+          <div class="min-w-0">
+            <span class="text-sm sm:text-base font-bold text-charcoal dark:text-white flex items-center gap-1">
+              <span class="material-symbols-outlined text-primary text-sm sm:text-base">auto_awesome</span>
+              AI 추천
+            </span>
+            <p class="text-[10px] sm:text-xs text-charcoal/50 dark:text-white/50 truncate">주변 도서관 대출 가능 도서 AI 추천</p>
+          </div>
+        </div>
+        <div id="ai-location-status" class="hidden flex items-center gap-1 text-xs text-charcoal/50 dark:text-white/50 flex-shrink-0">
+          <span id="ai-location-icon" class="material-symbols-outlined text-sm">location_searching</span>
+          <span id="ai-location-text">위치 확인중</span>
+        </div>
+      </div>
+
       <div>
+          <!-- AI Empty State -->
+          <div id="ai-empty-state" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-charcoal/30 dark:text-white/30 mb-4">location_off</span>
+            <p class="text-charcoal/60 dark:text-white/60 mb-2">주변 도서관에 소장된 도서가 없습니다.</p>
+            <button id="ai-switch-normal" class="mt-2 px-4 py-2 text-sm font-bold text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors">
+              일반 검색으로 전환
+            </button>
+          </div>
+
+          <!-- AI GPS Error State -->
+          <div id="ai-gps-error" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-red-400 mb-4">location_disabled</span>
+            <p class="text-charcoal/60 dark:text-white/60 mb-2">위치 정보를 가져올 수 없습니다.</p>
+            <p class="text-xs text-charcoal/40 dark:text-white/40 mb-4">브라우저에서 위치 권한을 허용해주세요.</p>
+            <button id="ai-switch-normal-gps" class="px-4 py-2 text-sm font-bold text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors">
+              일반 검색으로 전환
+            </button>
+          </div>
+
           <!-- Loading State -->
           <div id="loading-state" class="hidden flex flex-col items-center justify-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
-            <p class="text-charcoal/60 dark:text-white/60">검색 중...</p>
+            <p id="loading-text" class="text-charcoal/60 dark:text-white/60">검색 중...</p>
           </div>
 
           <!-- Error State -->
@@ -269,167 +309,7 @@ import { regions as regionsData } from '../data/regions.js';
     </div>
   </div>
 
-  <!-- Book Detail Modal -->
-  <div id="book-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
-    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-      <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10 p-1">
-        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
-      </button>
-
-      <!-- Book Info -->
-      <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
-        <div class="flex flex-col sm:flex-row gap-3 sm:gap-6">
-          <img id="modal-book-image" src="" alt="" class="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg flex-shrink-0 mx-auto sm:mx-0" />
-          <div class="flex flex-col text-center sm:text-left">
-            <h2 id="modal-book-title" class="text-lg sm:text-2xl font-bold text-charcoal dark:text-white mb-1 sm:mb-2 pr-6 sm:pr-0"></h2>
-            <p id="modal-book-author" class="text-sm sm:text-base text-charcoal/60 dark:text-white/60 mb-1"></p>
-            <p id="modal-book-publisher" class="text-charcoal/40 dark:text-white/40 text-xs sm:text-sm mb-2 sm:mb-3"></p>
-            <div id="modal-book-tags" class="flex flex-wrap gap-2 justify-center sm:justify-start"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Book Description & Review Section -->
-      <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
-        <div class="mb-3 sm:mb-4">
-          <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-2 sm:mb-3">
-            <span class="material-symbols-outlined text-primary text-lg sm:text-xl">rate_review</span>
-            도서 정보 및 리뷰
-          </h3>
-        </div>
-
-        <!-- Loading State -->
-        <div id="review-loading" class="hidden flex items-center justify-center py-6">
-          <div class="animate-spin rounded-full h-6 w-6 border-3 border-primary border-t-transparent"></div>
-          <span class="ml-2 text-sm text-charcoal/60 dark:text-white/60">정보를 불러오는 중...</span>
-        </div>
-
-        <!-- Review Content -->
-        <div id="review-content" class="hidden">
-          <!-- Blog Review -->
-          <div id="blog-review" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="material-symbols-outlined text-[#03C75A] text-lg">forum</span>
-              <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">블로그 리뷰</span>
-            </div>
-            <h4 id="review-title" class="text-sm sm:text-base font-bold text-charcoal dark:text-white mb-2 line-clamp-2"></h4>
-            <p id="review-description" class="text-xs sm:text-sm text-charcoal/70 dark:text-white/70 leading-relaxed line-clamp-3 mb-3"></p>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-xs text-charcoal/50 dark:text-white/50">
-                <span class="material-symbols-outlined text-sm">person</span>
-                <span id="review-blogger"></span>
-                <span>·</span>
-                <span id="review-date"></span>
-              </div>
-              <a id="review-link" href="#" target="_blank" rel="noopener noreferrer"
-                 class="text-xs text-[#03C75A] hover:underline flex items-center gap-1">
-                전체 보기
-                <span class="material-symbols-outlined text-sm">open_in_new</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Book Description -->
-          <div id="book-description" class="mb-4">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="material-symbols-outlined text-primary text-lg">description</span>
-              <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">책 소개</span>
-            </div>
-            <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed line-clamp-4"></p>
-          </div>
-
-          <!-- Price Info -->
-          <div id="book-price-info" class="hidden flex items-center gap-3 mb-4 p-2 sm:p-3 bg-charcoal/5 dark:bg-white/5 rounded-lg">
-            <span class="material-symbols-outlined text-primary text-lg">sell</span>
-            <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-              <span id="book-price" class="text-charcoal/40 dark:text-white/40 line-through"></span>
-              <span id="book-discount" class="text-primary font-bold"></span>
-            </div>
-          </div>
-
-          <!-- Naver Review Link -->
-          <a id="naver-review-link" href="#" target="_blank" rel="noopener noreferrer"
-             class="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 bg-[#03C75A] hover:bg-[#02b350] text-white font-bold rounded-lg transition-colors text-xs sm:text-sm">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
-            </svg>
-            네이버에서 더 많은 리뷰 보기
-          </a>
-        </div>
-
-        <!-- No Review State -->
-        <div id="review-empty" class="hidden text-center py-4">
-          <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30 mb-2">search_off</span>
-          <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">리뷰 정보를 찾을 수 없습니다.</p>
-        </div>
-      </div>
-
-      <!-- Library Search Section -->
-      <div class="p-3 sm:p-6">
-        <div class="mb-3 sm:mb-4">
-          <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-1 sm:mb-2">
-            <span class="material-symbols-outlined text-primary text-lg sm:text-xl">local_library</span>
-            도서 소장 도서관
-          </h3>
-          <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 flex items-center gap-1">
-            <span class="material-symbols-outlined text-xs sm:text-sm">info</span>
-            지역별 도서 소장 도서관을 조회합니다.
-          </p>
-        </div>
-
-        <!-- Region Selectors -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
-          <div class="flex-1">
-            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">지역</label>
-            <select
-              id="modal-region-select"
-              class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">지역 선택</option>
-              {regionsData.map((region) => (
-                <option value={region.code}>{region.name}</option>
-              ))}
-            </select>
-          </div>
-          <div class="flex-1">
-            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">세부 지역</label>
-            <select
-              id="modal-subregion-select"
-              class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled
-            >
-              <option value="">세부 지역</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Library Loading -->
-        <div id="library-loading" class="hidden flex items-center justify-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
-        </div>
-
-        <!-- Library Initial State -->
-        <div id="library-initial" class="text-center py-8">
-          <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">search</span>
-          <p class="text-charcoal/60 dark:text-white/60">지역을 선택하면 소장 도서관을 조회합니다.</p>
-        </div>
-
-        <!-- Library Empty -->
-        <div id="library-empty" class="hidden text-center py-8">
-          <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">library_books</span>
-          <p class="text-charcoal/60 dark:text-white/60">해당 지역에 소장 도서관이 없습니다.</p>
-        </div>
-
-        <!-- Library List -->
-        <div id="library-list" class="space-y-3 max-h-[300px] overflow-y-auto">
-          <!-- Libraries will be inserted here -->
-        </div>
-
-        <!-- Library Count -->
-        <div id="library-count" class="hidden mt-4 text-sm text-charcoal/60 dark:text-white/60 text-center"></div>
-      </div>
-    </div>
-  </div>
+  <BookDetailModal />
 
   <!-- Terms of Service Modal -->
   <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
@@ -541,423 +421,430 @@ import { regions as regionsData } from '../data/regions.js';
 
   <Auth />
 
-  <script define:vars={{ regionsData }}>
+  <script>
+    import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+
     // Get search keyword from URL
     const urlParams = new URLSearchParams(window.location.search);
     const keyword = urlParams.get('q') || '';
     const isbnParam = urlParams.get('isbn') || '';
+    const modeParam = urlParams.get('mode') || '';
     let currentPage = parseInt(urlParams.get('page') || '1');
     const pageSize = 12;
 
+    // AI mode state
+    let isAIMode = modeParam === 'ai';
+
     // Store current book data for modal
-    let currentBooks = [];
+    let currentBooks: any[] = [];
     let currentBookIndex = -1;
-    let modalSelectedRegion = '';
-    let modalSelectedSubRegion = '';
 
     const searchKeywordEl = document.getElementById('search-keyword');
     const resultCountEl = document.getElementById('result-count');
+    const heroTitle = document.getElementById('hero-title');
     const loadingState = document.getElementById('loading-state');
     const errorState = document.getElementById('error-state');
     const emptyState = document.getElementById('empty-state');
     const searchResults = document.getElementById('search-results');
     const pagination = document.getElementById('pagination');
     const pageInfo = document.getElementById('page-info');
-    const prevPageBtn = document.getElementById('prev-page');
-    const nextPageBtn = document.getElementById('next-page');
-    const headerSearchInput = document.getElementById('header-search-input');
+    const prevPageBtn = document.getElementById('prev-page') as HTMLButtonElement | null;
+    const nextPageBtn = document.getElementById('next-page') as HTMLButtonElement | null;
+    const headerSearchInput = document.getElementById('header-search-input') as HTMLInputElement | null;
     const headerSearchForm = document.getElementById('header-search-form');
 
-    // Modal elements
-    const bookModal = document.getElementById('book-modal');
-    const closeModalBtn = document.getElementById('close-modal');
-    const modalBookImage = document.getElementById('modal-book-image');
-    const modalBookTitle = document.getElementById('modal-book-title');
-    const modalBookAuthor = document.getElementById('modal-book-author');
-    const modalBookPublisher = document.getElementById('modal-book-publisher');
-    const modalBookTags = document.getElementById('modal-book-tags');
-    const libraryLoading = document.getElementById('library-loading');
-    const libraryInitial = document.getElementById('library-initial');
-    const libraryEmpty = document.getElementById('library-empty');
-    const libraryList = document.getElementById('library-list');
-    const libraryCount = document.getElementById('library-count');
-    const modalRegionSelect = document.getElementById('modal-region-select');
-    const modalSubRegionSelect = document.getElementById('modal-subregion-select');
-
-    // Review elements
-    const reviewLoading = document.getElementById('review-loading');
-    const reviewContent = document.getElementById('review-content');
-    const reviewEmpty = document.getElementById('review-empty');
-    const bookDescription = document.getElementById('book-description');
-    const bookPriceInfo = document.getElementById('book-price-info');
-    const bookPrice = document.getElementById('book-price');
-    const bookDiscount = document.getElementById('book-discount');
-    const naverReviewLink = document.getElementById('naver-review-link');
-
-    // Blog review elements
-    const blogReview = document.getElementById('blog-review');
-    const reviewTitle = document.getElementById('review-title');
-    const reviewDescription = document.getElementById('review-description');
-    const reviewBlogger = document.getElementById('review-blogger');
-    const reviewDate = document.getElementById('review-date');
-    const reviewLink = document.getElementById('review-link');
+    // AI mode elements
+    const aiModeToggle = document.getElementById('ai-mode-toggle') as HTMLInputElement | null;
+    const aiLocationStatus = document.getElementById('ai-location-status');
+    const aiLocationIcon = document.getElementById('ai-location-icon');
+    const aiLocationText = document.getElementById('ai-location-text');
+    const aiEmptyState = document.getElementById('ai-empty-state');
+    const aiGpsError = document.getElementById('ai-gps-error');
+    const aiSwitchNormal = document.getElementById('ai-switch-normal');
+    const aiSwitchNormalGps = document.getElementById('ai-switch-normal-gps');
 
     // Set search keyword in UI
     const displayKeyword = isbnParam ? `ISBN: ${isbnParam}` : keyword;
     if (searchKeywordEl) searchKeywordEl.textContent = `"${displayKeyword}"`;
     if (headerSearchInput) headerSearchInput.value = keyword || isbnParam;
 
+    // Update hero for AI mode
+    function updateHeroForMode() {
+      if (isAIMode && heroTitle) {
+        heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span id="search-keyword" class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
+        if (resultCountEl) resultCountEl.textContent = 'AI가 주변 도서관 대출 가능 도서를 찾고 있습니다...';
+      }
+    }
+
+    // Init AI mode toggle
+    if (aiModeToggle) {
+      aiModeToggle.checked = isAIMode;
+    }
+
+    if (isAIMode) updateHeroForMode();
+
     // Header search form
     headerSearchForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       const newKeyword = headerSearchInput?.value?.trim();
       if (newKeyword) {
-        window.location.href = `/search?q=${encodeURIComponent(newKeyword)}`;
+        const modeStr = isAIMode ? '&mode=ai' : '';
+        window.location.href = `/search?q=${encodeURIComponent(newKeyword)}${modeStr}`;
       }
     });
 
-    // Close modal
-    closeModalBtn?.addEventListener('click', () => {
-      bookModal?.classList.add('hidden');
-      resetModalState();
-    });
-
-    bookModal?.addEventListener('click', (e) => {
-      if (e.target === bookModal) {
-        bookModal.classList.add('hidden');
-        resetModalState();
-      }
-    });
-
-    // Reset modal state
-    function resetModalState() {
-      modalSelectedRegion = '';
-      modalSelectedSubRegion = '';
-      if (modalRegionSelect) modalRegionSelect.value = '';
-      if (modalSubRegionSelect) {
-        modalSubRegionSelect.innerHTML = '<option value="">세부 지역</option>';
-        modalSubRegionSelect.disabled = true;
-      }
-      libraryInitial?.classList.remove('hidden');
-      libraryEmpty?.classList.add('hidden');
-      libraryLoading?.classList.add('hidden');
-      libraryCount?.classList.add('hidden');
-      if (libraryList) libraryList.innerHTML = '';
-
-      // Reset review state
-      reviewLoading?.classList.add('hidden');
-      reviewContent?.classList.add('hidden');
-      reviewEmpty?.classList.add('hidden');
-      bookPriceInfo?.classList.add('hidden');
-    }
-
-    // Update sub-region dropdown based on selected region
-    function updateSubRegions(regionCode) {
-      if (!modalSubRegionSelect) return;
-
-      const region = regionsData.find(r => r.code === regionCode);
-      modalSubRegionSelect.innerHTML = '<option value="">전체</option>';
-
-      if (region && region.subRegions) {
-        region.subRegions.forEach(sub => {
-          const option = document.createElement('option');
-          option.value = sub.code;
-          option.textContent = sub.name;
-          modalSubRegionSelect.appendChild(option);
-        });
-        modalSubRegionSelect.disabled = false;
+    // AI mode toggle event
+    aiModeToggle?.addEventListener('change', () => {
+      isAIMode = aiModeToggle.checked;
+      const newUrl = new URL(window.location.href);
+      if (isAIMode) {
+        newUrl.searchParams.set('mode', 'ai');
       } else {
-        modalSubRegionSelect.disabled = true;
+        newUrl.searchParams.delete('mode');
       }
-    }
-
-    // Modal region select change
-    modalRegionSelect?.addEventListener('change', (e) => {
-      modalSelectedRegion = e.target.value;
-      modalSelectedSubRegion = '';
-      updateSubRegions(modalSelectedRegion);
-      if (modalSelectedRegion) {
-        searchLibraries();
+      newUrl.searchParams.delete('page');
+      window.history.pushState({}, '', newUrl.toString());
+      hideAllStates();
+      if (isAIMode) {
+        updateHeroForMode();
+        performAISearch();
       } else {
-        libraryInitial?.classList.remove('hidden');
-        libraryEmpty?.classList.add('hidden');
-        libraryLoading?.classList.add('hidden');
-        libraryCount?.classList.add('hidden');
-        if (libraryList) libraryList.innerHTML = '';
+        // Reset hero
+        if (heroTitle) {
+          heroTitle.innerHTML = `<span id="search-keyword" class="text-primary">"${displayKeyword}"</span> 검색 결과`;
+        }
+        performSearch(1);
       }
     });
 
-    // Modal sub-region select change
-    modalSubRegionSelect?.addEventListener('change', (e) => {
-      modalSelectedSubRegion = e.target.value;
-      if (modalSelectedRegion) {
-        searchLibraries();
-      }
+    // Switch to normal search buttons
+    aiSwitchNormal?.addEventListener('click', () => {
+      if (aiModeToggle) aiModeToggle.checked = false;
+      aiModeToggle?.dispatchEvent(new Event('change'));
+    });
+    aiSwitchNormalGps?.addEventListener('click', () => {
+      if (aiModeToggle) aiModeToggle.checked = false;
+      aiModeToggle?.dispatchEvent(new Event('change'));
     });
 
-    // Search libraries for current book
-    async function searchLibraries() {
-      const book = currentBooks[currentBookIndex];
+    // Initialize shared book modal
+    initBookModal();
+
+    // Open book detail modal
+    function openBookModal(bookIndex: number) {
+      const book = currentBooks[bookIndex];
       if (!book) return;
+      currentBookIndex = bookIndex;
+      sharedOpenModal(book);
+    }
 
-      const isbn = book.isbn13 || book.isbn;
-      if (!isbn) {
-        libraryInitial?.classList.add('hidden');
-        libraryEmpty?.classList.remove('hidden');
+    // Make function globally accessible
+    (window as any).openBookModal = openBookModal;
+
+    // Hide all states
+    function hideAllStates() {
+      loadingState?.classList.add('hidden');
+      errorState?.classList.add('hidden');
+      emptyState?.classList.add('hidden');
+      aiEmptyState?.classList.add('hidden');
+      aiGpsError?.classList.add('hidden');
+      searchResults?.classList.add('hidden');
+      pagination?.classList.add('hidden');
+      aiLocationStatus?.classList.add('hidden');
+    }
+
+    // Default placeholder SVG
+    const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='170' viewBox='0 0 120 170'%3E%3Crect fill='%23e2e8f0' width='120' height='170'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='40' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='10' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+    // ========================================
+    // AI Search Function
+    // ========================================
+    const loadingTextEl = document.getElementById('loading-text');
+
+    // Store AI recommendations for detail lookup (ai-only mode)
+    let aiOnlyRecommendations: Array<{ title: string; author: string }> = [];
+
+    async function performAISearch() {
+      if (!keyword) {
+        window.location.href = '/';
         return;
       }
 
-      // Show loading
-      libraryInitial?.classList.add('hidden');
-      libraryEmpty?.classList.add('hidden');
-      libraryLoading?.classList.remove('hidden');
-      libraryCount?.classList.add('hidden');
-      if (libraryList) libraryList.innerHTML = '';
+      hideAllStates();
+      loadingState?.classList.remove('hidden');
+      if (loadingTextEl) loadingTextEl.textContent = 'AI가 주변 도서관 대출 가능 도서를 찾는 중... (약 10~15초 소요)';
 
       try {
-        let apiUrl = `/api/library-by-book?isbn=${isbn}`;
-        if (modalSelectedRegion) apiUrl += `&region=${modalSelectedRegion}`;
-        if (modalSelectedSubRegion) apiUrl += `&dtl_region=${modalSelectedSubRegion}`;
+        let apiUrl = `/api/ai-search?keyword=${encodeURIComponent(keyword)}`;
 
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+        // Try to get GPS for nearby library check
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            if (!navigator.geolocation) { reject(); return; }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false, timeout: 8000, maximumAge: 300000
+            });
+          });
+          apiUrl += `&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`;
+          if (aiLocationStatus) {
+            aiLocationStatus.classList.remove('hidden');
+            if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
+            if (aiLocationText) aiLocationText.textContent = '위치 확인됨';
+          }
+        } catch {
+          // GPS not available, proceed without
+          if (aiLocationStatus) {
+            aiLocationStatus.classList.remove('hidden');
+            if (aiLocationIcon) aiLocationIcon.textContent = 'location_off';
+            if (aiLocationText) aiLocationText.textContent = '위치 없음';
+          }
+        }
 
-        libraryLoading?.classList.add('hidden');
+        if (loadingTextEl) loadingTextEl.textContent = 'AI 추천 도서를 분석하는 중...';
 
-        const libs = data.response?.libs || [];
-        if (libs.length === 0) {
-          libraryEmpty?.classList.remove('hidden');
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        loadingState?.classList.add('hidden');
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const mode = data.mode as string; // 'full', 'no-gps', 'ai-only'
+        const recommendations = data.recommendations || [];
+        const regions = (data.regions || []) as string[];
+        const seedBook = data.seedBook;
+
+        if (recommendations.length === 0) {
+          aiEmptyState?.classList.remove('hidden');
           return;
         }
 
-        // Show count
-        if (libraryCount) {
-          libraryCount.textContent = `총 ${libs.length}개의 도서관에서 소장 중`;
-          libraryCount.classList.remove('hidden');
+        // Update hero & result count
+        if (mode === 'full') {
+          const availCount = recommendations.filter((r: any) => r.nearbyLibCount > 0).length;
+          if (heroTitle) {
+            heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
+          }
+          if (resultCountEl) {
+            resultCountEl.textContent = `${regions.join(', ')} 지역 도서관에서 대출 가능한 ${availCount}권 포함, 총 ${recommendations.length}권을 추천합니다.`;
+          }
+        } else if (mode === 'no-gps') {
+          if (resultCountEl) {
+            resultCountEl.textContent = `AI가 ${recommendations.length}권의 관련 도서를 추천합니다. (위치 정보 없이 도서관 확인 불가)`;
+          }
+        } else {
+          // ai-only
+          if (resultCountEl) {
+            resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다. 클릭하면 상세 정보를 확인할 수 있습니다.`;
+          }
         }
 
-        libraryList.innerHTML = libs.map((item) => {
-          const lib = item.lib;
-          return `
-            <div class="p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg" data-libcode="${lib.libCode}">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <h4 class="font-bold text-charcoal dark:text-white">${lib.libName}</h4>
-                    <span class="loan-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-charcoal/10 dark:bg-white/10 text-charcoal/50 dark:text-white/50">
-                      <span class="material-symbols-outlined text-xs animate-spin">progress_activity</span>
-                      확인중
-                    </span>
-                  </div>
-                  <p class="text-sm text-charcoal/60 dark:text-white/60 mb-1">
-                    <span class="material-symbols-outlined text-sm align-middle">location_on</span>
-                    ${lib.address}
-                  </p>
-                  ${lib.tel ? `
-                    <p class="text-sm text-charcoal/60 dark:text-white/60">
-                      <span class="material-symbols-outlined text-sm align-middle">call</span>
-                      ${lib.tel}
-                    </p>
-                  ` : ''}
+        // Render based on mode
+        if (mode === 'ai-only') {
+          renderAIOnlyCards(recommendations);
+        } else {
+          renderFullAICards(recommendations, mode, seedBook);
+        }
+
+      } catch (error) {
+        loadingState?.classList.add('hidden');
+        errorState?.classList.remove('hidden');
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+          errorMessage.textContent = error instanceof Error ? error.message : '검색 중 오류가 발생했습니다.';
+        }
+      }
+    }
+
+    // Render full book cards (mode: full or no-gps)
+    function renderFullAICards(recommendations: any[], mode: string, seedBook: any) {
+      currentBooks = recommendations.map((r: any) => r.book);
+
+      if (searchResults) {
+        // Seed book card at top
+        let seedHtml = '';
+        if (seedBook) {
+          const seedImg = seedBook.bookImageURL || '';
+          const hasSeedImg = seedImg && seedImg.trim() !== '';
+          seedHtml = `
+            <div class="col-span-full mb-2 p-3 sm:p-4 rounded-xl border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
+              <div class="flex items-center gap-2 mb-2 text-xs text-primary font-bold">
+                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                AI가 선택한 기준 도서
+              </div>
+              <div class="flex items-center gap-3">
+                ${hasSeedImg ? `<img src="${seedImg}" alt="" class="w-10 h-14 object-cover rounded" onerror="this.style.display='none'" />` : ''}
+                <div>
+                  <p class="font-bold text-charcoal dark:text-white text-sm">${seedBook.bookname || ''}</p>
+                  <p class="text-xs text-charcoal/60 dark:text-white/60">${seedBook.authors || ''}</p>
                 </div>
-                ${lib.homepage ? `
-                  <a href="${lib.homepage}" target="_blank" rel="noopener noreferrer"
-                     class="flex-shrink-0 px-3 py-1 text-sm bg-primary text-charcoal rounded-lg hover:bg-primary/90 transition-colors">
-                    홈페이지
-                  </a>
-                ` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        const cardsHtml = recommendations.map((item: any, index: number) => {
+          const book = item.book;
+          const libCount = item.nearbyLibCount || 0;
+          const bookImageUrl = book.bookImageURL || '';
+          const hasImage = bookImageUrl && bookImageUrl.trim() !== '';
+          const bookname = book.bookname || book.bookName || '';
+          const authors = book.authors || '';
+          const publisher = book.publisher || '';
+          const pubYear = book.publication_year || '';
+
+          return `
+            <div
+              class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+              onclick="openBookModal(${index})"
+            >
+              <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
+                ${hasImage ? `
+                  <img
+                    src="${bookImageUrl}"
+                    alt="${bookname}"
+                    class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                    onerror="this.onerror=null; this.src='${placeholderImage}';"
+                  />
+                ` : `
+                  <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
+                    <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">No Image</span>
+                  </div>
+                `}
+                <div class="flex flex-col flex-1 min-w-0">
+                  <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${bookname}</h3>
+                  <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-0.5 sm:mb-1 truncate">${authors || '저자 미상'}</p>
+                  <p class="text-xs sm:text-sm text-charcoal/40 dark:text-white/40 mb-1 sm:mb-2 truncate">${publisher} ${pubYear ? `(${pubYear})` : ''}</p>
+                  <div class="mt-auto flex flex-wrap gap-1">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-primary/10 text-primary">
+                      <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                      AI 추천
+                    </span>
+                    ${mode === 'full' && libCount > 0 ? `
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        <span class="material-symbols-outlined text-xs">local_library</span>
+                        주변 ${libCount}개 도서관 소장
+                      </span>
+                    ` : ''}
+                    ${mode === 'full' && libCount === 0 ? `
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-charcoal/5 dark:bg-white/10 text-charcoal/50 dark:text-white/50">
+                        <span class="material-symbols-outlined text-xs">location_off</span>
+                        주변 도서관 미소장
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
             </div>
           `;
         }).join('');
 
-        // Check loan availability for each library
-        const bookExistPromises = libs.map(async (item) => {
-          const lib = item.lib;
-          const card = libraryList.querySelector(`[data-libcode="${lib.libCode}"]`);
-          if (!card) return;
-          const badge = card.querySelector('.loan-badge');
-          if (!badge) return;
-          try {
-            const res = await fetch(`/api/book-exist?isbn=${isbn}&libCode=${lib.libCode}`);
-            const result = await res.json();
-            if (result.loanAvailable) {
-              badge.className = 'loan-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
-              badge.innerHTML = '<span class="material-symbols-outlined text-xs">check_circle</span> 대출가능';
-            } else if (result.hasBook) {
-              badge.className = 'loan-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
-              badge.innerHTML = '<span class="material-symbols-outlined text-xs">cancel</span> 대출중';
-            } else {
-              badge.className = 'loan-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-charcoal/10 dark:bg-white/10 text-charcoal/50 dark:text-white/50';
-              badge.innerHTML = '<span class="material-symbols-outlined text-xs">help</span> 확인불가';
-            }
-          } catch {
-            badge.className = 'loan-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-charcoal/10 dark:bg-white/10 text-charcoal/50 dark:text-white/50';
-            badge.innerHTML = '<span class="material-symbols-outlined text-xs">help</span> 확인불가';
-          }
-        });
-        Promise.all(bookExistPromises);
-
-      } catch (error) {
-        libraryLoading?.classList.add('hidden');
-        libraryEmpty?.classList.remove('hidden');
-        console.error('Library fetch error:', error);
+        searchResults.innerHTML = seedHtml + cardsHtml;
+        searchResults.classList.remove('hidden');
       }
     }
 
-    // Default placeholder for modal
-    const modalPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='192' viewBox='0 0 128 192'%3E%3Crect fill='%23e2e8f0' width='128' height='192'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='58%25' font-family='Arial' font-size='12' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+    // Render minimal cards for ai-only mode (just title + author from OpenAI)
+    function renderAIOnlyCards(recommendations: Array<{ title: string; author: string }>) {
+      aiOnlyRecommendations = recommendations;
+      currentBooks = [];
 
-    // Format date from YYYYMMDD to YYYY.MM.DD
-    function formatDate(dateStr) {
-      if (!dateStr || dateStr.length !== 8) return dateStr;
-      return `${dateStr.slice(0,4)}.${dateStr.slice(4,6)}.${dateStr.slice(6,8)}`;
+      if (searchResults) {
+        searchResults.innerHTML = recommendations.map((rec, index) => {
+          return `
+            <div
+              class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+              onclick="openAIOnlyDetail(${index})"
+            >
+              <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
+                <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                  <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span>
+                  <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span>
+                </div>
+                <div class="flex flex-col flex-1 min-w-0 justify-center">
+                  <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${rec.title}</h3>
+                  <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-2 truncate">${rec.author || '저자 미상'}</p>
+                  <div class="mt-auto">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-primary/10 text-primary">
+                      <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                      AI 추천
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        searchResults.classList.remove('hidden');
+      }
     }
 
-    // Fetch book details from Naver API
-    async function fetchBookDetails(isbn, title) {
-      reviewLoading?.classList.remove('hidden');
-      reviewContent?.classList.add('hidden');
-      reviewEmpty?.classList.add('hidden');
-      blogReview?.classList.add('hidden');
+    // Open detail for ai-only mode: search data4library by title, then open modal
+    async function openAIOnlyDetail(index: number) {
+      const rec = aiOnlyRecommendations[index];
+      if (!rec) return;
+
+      const cards = searchResults?.querySelectorAll(':scope > div');
+      const card = cards?.[index];
+      if (card) {
+        card.classList.add('opacity-60', 'pointer-events-none');
+        const placeholder = card.querySelector('.book-placeholder');
+        if (placeholder) {
+          placeholder.innerHTML = '<div class="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>';
+        }
+      }
 
       try {
-        let apiUrl = '/api/book-detail?';
-        if (isbn) {
-          apiUrl += `isbn=${encodeURIComponent(isbn)}`;
-        }
-        if (title) {
-          apiUrl += `${isbn ? '&' : ''}title=${encodeURIComponent(title)}`;
-        }
+        const res = await fetch(`/api/search?keyword=${encodeURIComponent(rec.title)}&pageNo=1&pageSize=3`);
+        const data = await res.json();
+        const docs = data.response?.docs || [];
 
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-
-        reviewLoading?.classList.add('hidden');
-
-        if (data.success && data.book) {
-          const bookData = data.book;
-
-          // Show blog review (if available)
-          if (data.review && blogReview) {
-            const review = data.review;
-            if (reviewTitle) reviewTitle.textContent = review.title;
-            if (reviewDescription) reviewDescription.textContent = review.description;
-            if (reviewBlogger) reviewBlogger.textContent = review.bloggerName;
-            if (reviewDate) reviewDate.textContent = formatDate(review.postDate);
-            if (reviewLink) reviewLink.href = review.link;
-            blogReview.classList.remove('hidden');
-          }
-
-          // Show description (if available)
-          if (bookData.description && bookDescription) {
-            const descP = bookDescription.querySelector('p');
-            if (descP) {
-              descP.textContent = bookData.description;
-              bookDescription.classList.remove('hidden');
-            }
-          } else if (bookDescription) {
-            bookDescription.classList.add('hidden');
-          }
-
-          // Show price info (if available)
-          if (bookData.price && bookData.discount) {
-            bookPriceInfo?.classList.remove('hidden');
-            if (bookPrice) bookPrice.textContent = `정가: ${parseInt(bookData.price).toLocaleString()}원`;
-            if (bookDiscount) bookDiscount.textContent = `${parseInt(bookData.discount).toLocaleString()}원`;
-          } else {
-            bookPriceInfo?.classList.add('hidden');
-          }
-
-          // Set Naver link
-          if (naverReviewLink && title) {
-            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
-          }
-
-          reviewContent?.classList.remove('hidden');
+        if (docs.length > 0) {
+          const book = docs[0].doc;
+          currentBooks = [book];
+          sharedOpenModal(book);
         } else {
-          // Show fallback link even on error
-          if (naverReviewLink && title) {
-            naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
-            if (bookDescription) bookDescription.classList.add('hidden');
-            bookPriceInfo?.classList.add('hidden');
-            reviewContent?.classList.remove('hidden');
-          } else {
-            reviewEmpty?.classList.remove('hidden');
-          }
+          const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+          currentBooks = [minimalBook];
+          sharedOpenModal(minimalBook);
         }
-      } catch (error) {
-        console.error('Book detail fetch error:', error);
-        reviewLoading?.classList.add('hidden');
-        // Show fallback link even on error
-        if (naverReviewLink && title) {
-          naverReviewLink.href = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(title + ' 책 리뷰')}`;
-          if (bookDescription) bookDescription.classList.add('hidden');
-          bookPriceInfo?.classList.add('hidden');
-          blogReview?.classList.add('hidden');
-          reviewContent?.classList.remove('hidden');
-        } else {
-          reviewEmpty?.classList.remove('hidden');
+      } catch {
+        const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+        currentBooks = [minimalBook];
+        sharedOpenModal(minimalBook);
+      } finally {
+        if (card) {
+          card.classList.remove('opacity-60', 'pointer-events-none');
+          const placeholder = card.querySelector('.book-placeholder');
+          if (placeholder) {
+            placeholder.innerHTML = `<span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span><span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span>`;
+          }
         }
       }
     }
 
-    // Open book detail modal
-    function openBookModal(bookIndex) {
-      const book = currentBooks[bookIndex];
-      if (!book) return;
+    // Make functions globally accessible
+    (window as any).openAIOnlyDetail = openAIOnlyDetail;
 
-      currentBookIndex = bookIndex;
-
-      // Set book info
-      const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
-      modalBookImage.src = hasImage ? book.bookImageURL : modalPlaceholder;
-      modalBookImage.onerror = () => { modalBookImage.src = modalPlaceholder; };
-      modalBookImage.classList.toggle('bg-gray-200', !hasImage);
-      modalBookTitle.textContent = book.bookname;
-      modalBookAuthor.textContent = book.authors || '저자 미상';
-      modalBookPublisher.textContent = `${book.publisher || ''} ${book.publication_year ? `(${book.publication_year})` : ''}`;
-
-      // Tags
-      modalBookTags.innerHTML = '';
-      if (book.class_nm) {
-        modalBookTags.innerHTML += `<span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">${book.class_nm}</span>`;
-      }
-      if (book.isbn13) {
-        modalBookTags.innerHTML += `<span class="text-xs px-2 py-1 bg-charcoal/5 dark:bg-white/10 text-charcoal/60 dark:text-white/60 rounded-full">ISBN: ${book.isbn13}</span>`;
-      }
-
-      // Reset modal state
-      resetModalState();
-
-      // Show modal
-      bookModal?.classList.remove('hidden');
-
-      // Fetch book details from Naver API
-      fetchBookDetails(book.isbn13, book.bookname);
-    }
-
-    // Make function globally accessible
-    window.openBookModal = openBookModal;
-
-    // Search function
+    // ========================================
+    // Normal Search Function
+    // ========================================
     async function performSearch(page = 1, autoOpenModal = false) {
       if (!keyword && !isbnParam) {
         window.location.href = '/';
         return;
       }
 
-      // Show loading
+      hideAllStates();
       loadingState?.classList.remove('hidden');
-      errorState?.classList.add('hidden');
-      emptyState?.classList.add('hidden');
-      searchResults?.classList.add('hidden');
-      pagination?.classList.add('hidden');
+      if (loadingTextEl) loadingTextEl.textContent = '검색 중...';
 
       try {
         let apiUrl;
         if (isbnParam) {
-          // Search by ISBN
           apiUrl = `/api/search?isbn=${encodeURIComponent(isbnParam)}&pageNo=${page}&pageSize=${pageSize}`;
         } else {
           apiUrl = `/api/search?keyword=${encodeURIComponent(keyword)}&pageNo=${page}&pageSize=${pageSize}`;
@@ -975,8 +862,7 @@ import { regions as regionsData } from '../data/regions.js';
         const totalCount = parseInt(data.response?.numFound || '0');
         const totalPages = Math.ceil(totalCount / pageSize);
 
-        // Store books for modal
-        currentBooks = books.map(item => item.doc);
+        currentBooks = books.map((item: any) => item.doc);
 
         if (resultCountEl) {
           resultCountEl.textContent = `총 ${totalCount.toLocaleString()}건의 도서가 검색되었습니다.`;
@@ -987,12 +873,8 @@ import { regions as regionsData } from '../data/regions.js';
           return;
         }
 
-        // Render results
-        // Default placeholder SVG as data URI
-        const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='170' viewBox='0 0 120 170'%3E%3Crect fill='%23e2e8f0' width='120' height='170'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='40' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='10' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
-
         if (searchResults) {
-          searchResults.innerHTML = books.map((item, index) => {
+          searchResults.innerHTML = books.map((item: any, index: number) => {
             const book = item.doc;
             const bookImageUrl = book.bookImageURL || '';
             const hasImage = bookImageUrl && bookImageUrl.trim() !== '';
@@ -1071,7 +953,11 @@ import { regions as regionsData } from '../data/regions.js';
     });
 
     // Initial search
-    performSearch(currentPage, !!isbnParam);
+    if (isAIMode) {
+      performAISearch();
+    } else {
+      performSearch(currentPage, !!isbnParam);
+    }
 
     // ========================================
     // Footer Modals
