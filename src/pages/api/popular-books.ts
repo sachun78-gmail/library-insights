@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
+import { getCachedResponse, setCachedResponse } from '../../lib/cache';
 
 export const prerender = false;
+
+const CACHE_TTL = 1 * 60 * 60; // 1시간
 
 // Helper to get env variable (works in both local and Cloudflare)
 function getEnvVar(locals: any, key: string): string | undefined {
@@ -11,6 +14,9 @@ function getEnvVar(locals: any, key: string): string | undefined {
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
+  const cacheKey = request.url;
+  const cached = await getCachedResponse(cacheKey);
+  if (cached) return cached;
   const url = new URL(request.url);
   const startDt = url.searchParams.get('startDt') || '';
   const endDt = url.searchParams.get('endDt') || '';
@@ -43,6 +49,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const response = await fetch(apiUrl);
     const data = await response.json();
+
+    await setCachedResponse(cacheKey, data, CACHE_TTL);
 
     return new Response(JSON.stringify(data), {
       status: 200,

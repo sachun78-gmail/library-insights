@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
+import { getCachedResponse, setCachedResponse } from '../../lib/cache';
 
 export const prerender = false;
+
+const CACHE_TTL = 6 * 60 * 60; // 6시간
 
 function getEnvVar(locals: any, key: string): string | undefined {
   if (locals?.runtime?.env?.[key]) {
@@ -9,7 +12,11 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return (import.meta.env as any)[key];
 }
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
+  const cacheKey = request.url;
+  const cached = await getCachedResponse(cacheKey);
+  if (cached) return cached;
+
   const authKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
 
   if (!authKey) {
@@ -31,6 +38,8 @@ export const GET: APIRoute = async ({ locals }) => {
 
     const response = await fetch(apiUrl);
     const data = await response.json();
+
+    await setCachedResponse(cacheKey, data, CACHE_TTL);
 
     return new Response(JSON.stringify(data), {
       status: 200,

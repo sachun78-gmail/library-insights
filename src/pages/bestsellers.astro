@@ -48,6 +48,7 @@ import { regions as regionsData } from '../data/regions.js';
 <div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
 <nav class="hidden md:flex items-center gap-3 sm:gap-9">
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/">Home</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
 </nav>
 <button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
   <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
@@ -117,6 +118,7 @@ import { regions as regionsData } from '../data/regions.js';
     <div class="px-4 py-4 space-y-2">
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
     </div>
   </div>
 </div>
@@ -571,6 +573,11 @@ sachun78@gmail.com
         <div>
           <a href="/search" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
             <span class="material-symbols-outlined">search</span>검색
+          </a>
+        </div>
+        <div>
+          <a href="/mybookshelf" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">collections_bookmark</span>내 서재
           </a>
         </div>
       </nav>

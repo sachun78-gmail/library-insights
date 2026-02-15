@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
+import { getCachedResponse, setCachedResponse } from '../../lib/cache';
 
 export const prerender = false;
+
+const CACHE_TTL = 6 * 60 * 60; // 6시간
 
 // Helper to get env variable (works in both local and Cloudflare)
 function getEnvVar(locals: any, key: string): string | undefined {
@@ -11,6 +14,10 @@ function getEnvVar(locals: any, key: string): string | undefined {
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
+  const cacheKey = request.url;
+  const cached = await getCachedResponse(cacheKey);
+  if (cached) return cached;
+
   const url = new URL(request.url);
 
   // 기본값: 오늘 날짜 (API는 최근 날짜 데이터를 반환)
@@ -33,6 +40,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const response = await fetch(apiUrl);
     const data = await response.json();
+
+    await setCachedResponse(cacheKey, data, CACHE_TTL);
 
     return new Response(JSON.stringify(data), {
       status: 200,

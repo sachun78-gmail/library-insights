@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
+import { getCachedResponse, setCachedResponse } from '../../lib/cache';
 
 export const prerender = false;
+
+const CACHE_TTL = 24 * 60 * 60; // 24시간
 
 function getEnvVar(locals: any, key: string): string | undefined {
   if (locals?.runtime?.env?.[key]) {
@@ -9,7 +12,13 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return (import.meta.env as any)[key];
 }
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
+  // 날짜 기반 캐시 키: 하루 1회만 새 추천 생성
+  const today = new Date().toISOString().split('T')[0];
+  const cacheKey = `${new URL(request.url).origin}/api/monthly-recommend?date=${today}`;
+  const cached = await getCachedResponse(cacheKey);
+  if (cached) return cached;
+
   const apiKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
 
   if (!apiKey) {
@@ -109,6 +118,8 @@ export const GET: APIRoute = async ({ locals }) => {
         loan_count: book.loan_count || bookDetail?.loan_count || ''
       }
     };
+
+    await setCachedResponse(cacheKey, result, CACHE_TTL);
 
     return new Response(JSON.stringify(result), {
       status: 200,

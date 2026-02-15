@@ -78,6 +78,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 <div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
 <nav class="hidden md:flex items-center gap-3 sm:gap-9">
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
 </nav>
 <button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
   <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
@@ -147,6 +148,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     <div class="px-4 py-4 space-y-2">
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
     </div>
   </div>
 </div>
@@ -466,6 +468,13 @@ sachun78@gmail.com
           </a>
           <p class="text-xs text-charcoal/60 dark:text-white/60 ml-8 mt-1">도서 검색, 소장 도서관 조회</p>
         </div>
+        <div>
+          <a href="/mybookshelf" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">collections_bookmark</span>
+            내 서재
+          </a>
+          <p class="text-xs text-charcoal/60 dark:text-white/60 ml-8 mt-1">찜한 도서 관리</p>
+        </div>
       </nav>
     </div>
   </div>
@@ -518,6 +527,7 @@ sachun78@gmail.com
 <Auth />
 <script>
   import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+  import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../scripts/bookmarks';
 
   // Search form handler
   const searchForm = document.getElementById('search-form');
@@ -694,6 +704,8 @@ sachun78@gmail.com
         newArrivalsList.innerHTML = newArrivalsBooks.map((book: any, index: number) => {
           const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
           const imgSrc = hasImage ? book.bookImageURL : cardPlaceholder;
+          const isbn = book.isbn13 || '';
+          const filled = isbn ? isBookmarked(isbn) : false;
           return `
             <div class="flex-shrink-0 w-[140px] sm:w-[160px] cursor-pointer group snap-start" data-new-arrival-index="${index}">
               <div class="relative overflow-hidden rounded-lg mb-2 shadow-md group-hover:shadow-lg transition-shadow">
@@ -704,6 +716,11 @@ sachun78@gmail.com
                   onerror="this.onerror=null; this.src='${cardPlaceholder}';"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                ${isbn ? `
+                  <button class="bookmark-btn absolute top-1 right-1 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10" data-isbn="${isbn}" data-book-index="${index}">
+                    <span class="material-symbols-outlined text-lg ${filled ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}" style="font-variation-settings: 'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                  </button>
+                ` : ''}
               </div>
               <h4 class="text-xs sm:text-sm font-bold text-charcoal dark:text-white line-clamp-2 leading-tight mb-0.5">${book.bookname}</h4>
               <p class="text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 truncate">${book.authors || '저자 미상'}</p>
@@ -713,10 +730,43 @@ sachun78@gmail.com
 
         // Add click handlers
         newArrivalsList.querySelectorAll('[data-new-arrival-index]').forEach((card) => {
-          card.addEventListener('click', () => {
+          card.addEventListener('click', (e) => {
+            // Don't open modal if clicking bookmark button
+            if ((e.target as HTMLElement).closest('.bookmark-btn')) return;
             const idx = parseInt(card.getAttribute('data-new-arrival-index') || '0');
             const book = newArrivalsBooks[idx];
             if (book) openBookModal(book);
+          });
+        });
+
+        // Bookmark button handlers
+        newArrivalsList.querySelectorAll('.bookmark-btn').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const userId = getUserId();
+            if (!userId) {
+              const signinBtn = document.getElementById('signin-btn');
+              signinBtn?.click();
+              return;
+            }
+            const isbn = (btn as HTMLElement).dataset.isbn || '';
+            const bookIdx = parseInt((btn as HTMLElement).dataset.bookIndex || '0');
+            const book = newArrivalsBooks[bookIdx];
+            if (!book || !isbn) return;
+
+            const icon = btn.querySelector('.material-symbols-outlined');
+            const nowBookmarked = await toggleBookmark({
+              isbn13: isbn,
+              bookname: book.bookname,
+              authors: book.authors,
+              publisher: book.publisher,
+              publication_year: book.publication_year,
+              bookImageURL: book.bookImageURL,
+            });
+            if (icon) {
+              icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}`;
+              (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+            }
           });
         });
       }
@@ -853,8 +903,8 @@ sachun78@gmail.com
     fetchNewArrivals();
   });
 
-  // Load new arrivals on page load
-  fetchNewArrivals();
+  // Init bookmarks, then load new arrivals
+  initBookmarks().then(() => fetchNewArrivals());
 
   // ========================================
   // Footer Modals (Terms, Privacy, Sitemap)
