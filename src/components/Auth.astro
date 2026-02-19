@@ -445,6 +445,18 @@ import { regions } from '../data/regions.js';
   const mobileSignoutBtn = document.getElementById('mobile-signout-btn');
 
   // Check auth state and update UI
+  async function getProfileAvatar(userId) {
+    try {
+      const response = await fetch(`/api/profile?userId=${userId}`);
+      if (!response.ok) return null;
+      const result = await response.json();
+      return result?.profile?.avatar_url || null;
+    } catch (error) {
+      console.error('Error loading profile avatar:', error);
+      return null;
+    }
+  }
+
   async function updateAuthUI() {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -457,7 +469,9 @@ import { regions } from '../data/regions.js';
 
       // Set profile info
       const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
-      const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+      const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+      const profileAvatarUrl = await getProfileAvatar(user.id);
+      const avatar = profileAvatarUrl || metadataAvatar;
       const email = user.email;
 
       if (profileName) profileName.textContent = name;
