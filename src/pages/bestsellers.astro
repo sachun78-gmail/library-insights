@@ -4,9 +4,19 @@ import Auth from '../components/Auth.astro';
 import Analytics from '../components/Analytics.astro';
 import { regions as regionsData } from '../data/regions.js';
 ---
-<html lang="ko"><head>
+<html lang="ko" class=""><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
 <meta name="description" content="공공도서관 인기 대출 도서와 급상승 도서를 지역, 연령, 성별, 기간별로 확인하세요."/>
 <link rel="canonical" href="https://library-insights.pages.dev/bestsellers"/>
 <meta property="og:site_name" content="LibraryInsights"/>
@@ -50,6 +60,10 @@ import { regions as regionsData } from '../data/regions.js';
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/">Home</a>
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
 </nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
 <button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
   <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
 </button>
@@ -119,6 +133,12 @@ import { regions as regionsData } from '../data/regions.js';
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
     </div>
   </div>
 </div>
@@ -373,10 +393,10 @@ sachun78@gmail.com
 </div>
 
 <!-- Book Detail Modal -->
-<div id="book-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
-  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-    <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10 p-1">
-      <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+<div id="book-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-2xl ring-1 ring-charcoal/10 dark:ring-white/15 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+    <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-charcoal/5 dark:bg-white/10 text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white hover:bg-charcoal/10 dark:hover:bg-white/20 transition-colors z-10">
+      <span class="material-symbols-outlined text-lg sm:text-xl">close</span>
     </button>
 
     <!-- Book Info -->
@@ -629,8 +649,52 @@ sachun78@gmail.com
   </div>
 </div>
 
+<script>
+  import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../scripts/bookmarks';
+  window.__bookmarks = { initBookmarks, isBookmarked, toggleBookmark, getUserId };
+  window.dispatchEvent(new CustomEvent('bookmarks-loaded'));
+</script>
+<script>
+  import '../scripts/theme';
+</script>
 <Auth />
 <script define:vars={{ regionsData }}>
+  // ========================================
+  // Bookmarks
+  // ========================================
+  function attachBookmarkHandlers(gridEl, booksArray) {
+    if (!gridEl) return;
+    gridEl.querySelectorAll('.bookmark-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const bm = window.__bookmarks || {};
+        if (!bm.getUserId || !bm.getUserId()) {
+          const signinBtn = document.getElementById('signin-btn');
+          signinBtn?.click();
+          return;
+        }
+        const isbn = btn.dataset.isbn;
+        const idx = parseInt(btn.dataset.bookIndex || '0');
+        const book = booksArray[idx];
+        if (!book || !isbn) return;
+
+        const icon = btn.querySelector('.material-symbols-outlined');
+        const nowBookmarked = await bm.toggleBookmark({
+          isbn13: isbn,
+          bookname: book.bookname,
+          authors: book.authors,
+          publisher: book.publisher,
+          publication_year: book.publication_year,
+          bookImageURL: book.bookImageURL,
+        });
+        if (icon) {
+          icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}`;
+          icon.style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+        }
+      });
+    });
+  }
+
   // ========================================
   // Book Detail Modal
   // ========================================
@@ -1102,12 +1166,22 @@ sachun78@gmail.com
         const book = item.doc;
         const rank = (currentPage - 1) * pageSize + index + 1;
         const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
+        const bm = window.__bookmarks || {};
+        const bookmarked = bm.isBookmarked && book.isbn13 && bm.isBookmarked(book.isbn13);
         return `
           <div class="book-card bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer" onclick="openPopularBookModal(${index})">
             <div class="relative">
               <div class="absolute top-2 left-2 bg-primary text-charcoal text-xs font-bold px-2 py-1 rounded-full z-10">
                 ${rank}위
               </div>
+              ${book.isbn13 ? `
+                <button class="bookmark-btn absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10"
+                  data-isbn="${book.isbn13}" data-book-type="popular" data-book-index="${index}"
+                  onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined text-lg ${bookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}"
+                    style="font-variation-settings: 'FILL' ${bookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                </button>
+              ` : ''}
               ${hasImage ? `
                 <img src="${book.bookImageURL}" alt="${book.bookname}" class="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='${bookPlaceholder}';" />
               ` : `
@@ -1131,6 +1205,7 @@ sachun78@gmail.com
       }).join('');
 
       if (popularBooksGrid) popularBooksGrid.innerHTML = booksHtml;
+      attachBookmarkHandlers(popularBooksGrid, allPopularBooks);
 
       resultsInfo?.classList.remove('hidden');
       if (resultsInfo) {
@@ -1211,6 +1286,8 @@ sachun78@gmail.com
         const difference = book.difference ? parseInt(book.difference) : 0;
         const diffText = difference > 0 ? `+${difference}` : difference;
         const diffColor = difference > 0 ? 'text-red-500' : (difference < 0 ? 'text-blue-500' : 'text-gray-500');
+        const bm = window.__bookmarks || {};
+        const bookmarked = bm.isBookmarked && book.isbn13 && bm.isBookmarked(book.isbn13);
 
         return `
           <div class="book-card bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer" onclick="openHottrendBookModal(${index})">
@@ -1223,6 +1300,14 @@ sachun78@gmail.com
                 <div class="absolute top-2 right-2 ${diffColor} bg-white dark:bg-charcoal-700 text-xs font-bold px-2 py-1 rounded-full z-10">
                   ${diffText}
                 </div>
+              ` : ''}
+              ${book.isbn13 ? `
+                <button class="bookmark-btn absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10"
+                  data-isbn="${book.isbn13}" data-book-type="hottrend" data-book-index="${index}"
+                  onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined text-lg ${bookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}"
+                    style="font-variation-settings: 'FILL' ${bookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                </button>
               ` : ''}
               ${hasImage ? `
                 <img src="${book.bookImageURL}" alt="${book.bookname}" class="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='${bookPlaceholder}';" />
@@ -1241,6 +1326,7 @@ sachun78@gmail.com
       }).join('');
 
       if (hottrendBooksGrid) hottrendBooksGrid.innerHTML = booksHtml;
+      attachBookmarkHandlers(hottrendBooksGrid, allHottrendBooks);
 
     } catch (error) {
       console.error('Hot trend books fetch error:', error);
@@ -1256,7 +1342,14 @@ sachun78@gmail.com
   }
 
   // Load default data
-  fetchPopularBooks();
+  (async () => {
+    await new Promise(resolve => {
+      if (window.__bookmarks) return resolve();
+      window.addEventListener('bookmarks-loaded', resolve, { once: true });
+    });
+    await window.__bookmarks.initBookmarks();
+    fetchPopularBooks();
+  })();
 
   // ========================================
   // Footer Modals
@@ -1310,5 +1403,6 @@ sachun78@gmail.com
     const signinBtn = document.getElementById('signin-btn');
     signinBtn?.click();
   });
+
 </script>
 </body></html>

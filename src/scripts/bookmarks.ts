@@ -43,6 +43,10 @@ export function getUserId(): string | null {
   return currentUserId;
 }
 
+export function getBookmarkedIsbns(): string[] {
+  return Array.from(bookmarkedIsbns);
+}
+
 export function isLoaded(): boolean {
   return loaded;
 }

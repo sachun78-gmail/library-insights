@@ -3,6 +3,7 @@
 // Includes integrated library search: GPS-based with region dropdown fallback
 
 import { regions as regionsData } from '../data/regions.js';
+import { getUserId } from './bookmarks';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='192' viewBox='0 0 128 192'%3E%3Crect fill='%23e2e8f0' width='128' height='192'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='58%25' font-family='Arial' font-size='12' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
@@ -32,6 +33,139 @@ function getEl(id: string): HTMLElement | null {
 function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.length !== 8) return dateStr || '';
   return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
+}
+
+// ========================================
+// AI Insight Section
+// ========================================
+
+let _aiProgressTimer: ReturnType<typeof setInterval> | null = null;
+
+function resetAiInsightState(): void {
+  stopAiProgress();
+  getEl('ai-insight-btn')?.classList.remove('hidden');
+  getEl('ai-insight-login')?.classList.add('hidden');
+  getEl('ai-insight-loading')?.classList.add('hidden');
+  getEl('ai-insight-content')?.classList.add('hidden');
+  getEl('ai-insight-error')?.classList.add('hidden');
+}
+
+const AI_PROGRESS_STEPS = [
+  { pct: 10, text: '도서 정보 수집 중...' },
+  { pct: 25, text: 'AI 모델에 요청 중...' },
+  { pct: 45, text: '도서 내용 분석 중...' },
+  { pct: 60, text: '핵심 인사이트 추출 중...' },
+  { pct: 75, text: '추천 대상 분석 중...' },
+  { pct: 85, text: '난이도 평가 중...' },
+  { pct: 92, text: '결과 정리 중...' },
+];
+
+function startAiProgress(): void {
+  stopAiProgress();
+  let stepIdx = 0;
+  const bar = getEl('ai-insight-progress-bar') as HTMLElement | null;
+  const pct = getEl('ai-insight-progress-percent');
+  const txt = getEl('ai-insight-loading-text');
+  if (bar) bar.style.width = '0%';
+  if (pct) pct.textContent = '0%';
+  if (txt) txt.textContent = AI_PROGRESS_STEPS[0].text;
+
+  _aiProgressTimer = setInterval(() => {
+    if (stepIdx >= AI_PROGRESS_STEPS.length) {
+      stopAiProgress();
+      return;
+    }
+    const step = AI_PROGRESS_STEPS[stepIdx];
+    if (bar) bar.style.width = `${step.pct}%`;
+    if (pct) pct.textContent = `${step.pct}%`;
+    if (txt) txt.textContent = step.text;
+    stepIdx++;
+  }, 1200);
+}
+
+function stopAiProgress(): void {
+  if (_aiProgressTimer) {
+    clearInterval(_aiProgressTimer);
+    _aiProgressTimer = null;
+  }
+}
+
+function completeAiProgress(): Promise<void> {
+  stopAiProgress();
+  const bar = getEl('ai-insight-progress-bar') as HTMLElement | null;
+  const pct = getEl('ai-insight-progress-percent');
+  const txt = getEl('ai-insight-loading-text');
+  if (bar) bar.style.width = '100%';
+  if (pct) pct.textContent = '100%';
+  if (txt) txt.textContent = '분석 완료!';
+  return new Promise(resolve => setTimeout(resolve, 400));
+}
+
+async function fetchAiInsight(): Promise<void> {
+  if (!_currentBook) return;
+
+  const title = _currentBook.bookname || '';
+  const author = _currentBook.authors || '';
+  if (!title) return;
+
+  getEl('ai-insight-btn')?.classList.add('hidden');
+  getEl('ai-insight-login')?.classList.add('hidden');
+  getEl('ai-insight-loading')?.classList.remove('hidden');
+  getEl('ai-insight-content')?.classList.add('hidden');
+  getEl('ai-insight-error')?.classList.add('hidden');
+
+  startAiProgress();
+
+  try {
+    let apiUrl = `/api/book-ai-insight?title=${encodeURIComponent(title)}`;
+    if (author) apiUrl += `&author=${encodeURIComponent(author)}`;
+
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    if (data.error || !data.success || !data.insight) {
+      stopAiProgress();
+      getEl('ai-insight-loading')?.classList.add('hidden');
+      getEl('ai-insight-error')?.classList.remove('hidden');
+      return;
+    }
+
+    const insight = data.insight;
+
+    if (insight.raw) {
+      const summaryEl = getEl('ai-insight-summary');
+      if (summaryEl) summaryEl.textContent = insight.raw;
+    } else {
+      const summaryEl = getEl('ai-insight-summary');
+      const keyMsgEl = getEl('ai-insight-key-message');
+      const recommendEl = getEl('ai-insight-recommend');
+      const difficultyEl = getEl('ai-insight-difficulty');
+
+      if (summaryEl) summaryEl.textContent = insight.summary || '';
+      if (keyMsgEl) keyMsgEl.textContent = insight.keyMessage || '';
+      if (recommendEl) recommendEl.textContent = insight.recommendFor || '';
+      if (difficultyEl) difficultyEl.textContent = insight.difficulty || '';
+    }
+
+    await completeAiProgress();
+    getEl('ai-insight-loading')?.classList.add('hidden');
+    getEl('ai-insight-content')?.classList.remove('hidden');
+  } catch (error) {
+    console.error('AI insight fetch error:', error);
+    stopAiProgress();
+    getEl('ai-insight-loading')?.classList.add('hidden');
+    getEl('ai-insight-error')?.classList.remove('hidden');
+  }
+}
+
+function handleAiInsightClick(): void {
+  const userId = getUserId();
+  if (!userId) {
+    getEl('ai-insight-btn')?.classList.add('hidden');
+    getEl('ai-insight-login')?.classList.remove('hidden');
+    return;
+  }
+  fetchAiInsight();
 }
 
 // ========================================
@@ -651,6 +785,22 @@ export function initBookModal(callbacks?: BookModalCallbacks): void {
   getEl('switch-to-region-btn')?.addEventListener('click', () => {
     switchToRegionMode();
   });
+
+  // AI Insight button
+  getEl('ai-insight-btn')?.addEventListener('click', () => {
+    handleAiInsightClick();
+  });
+
+  // AI Insight login button — trigger main sign-in
+  getEl('ai-insight-login-btn')?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
+  });
+
+  // AI Insight retry button
+  getEl('ai-insight-retry-btn')?.addEventListener('click', () => {
+    fetchAiInsight();
+  });
 }
 
 export function openBookModal(book: any): void {
@@ -686,6 +836,7 @@ export function openBookModal(book: any): void {
     }
   }
 
+  resetAiInsightState();
   resetReviewState();
   resetLibraryState();
   _callbacks.onOpen?.(book);
@@ -699,6 +850,7 @@ export function openBookModal(book: any): void {
 
 export function closeBookModal(): void {
   getEl('book-modal')?.classList.add('hidden');
+  resetAiInsightState();
   resetReviewState();
   resetLibraryState();
   _currentBook = null;

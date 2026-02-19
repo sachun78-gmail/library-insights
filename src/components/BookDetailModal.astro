@@ -3,10 +3,10 @@
 // Library section is integrated: GPS-based or region dropdown fallback
 import { regions as regionsData } from '../data/regions.js';
 ---
-<div id="book-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
-  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-    <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10 p-1">
-      <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+<div id="book-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-2xl ring-1 ring-charcoal/10 dark:ring-white/15 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+    <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-charcoal/5 dark:bg-white/10 text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white hover:bg-charcoal/10 dark:hover:bg-white/20 transition-colors z-10">
+      <span class="material-symbols-outlined text-lg sm:text-xl">close</span>
     </button>
 
     <!-- Book Info -->
@@ -19,6 +19,82 @@ import { regions as regionsData } from '../data/regions.js';
           <p id="modal-book-publisher" class="text-charcoal/40 dark:text-white/40 text-xs sm:text-sm mb-2 sm:mb-3"></p>
           <div id="modal-book-tags" class="flex flex-wrap gap-2 justify-center sm:justify-start"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Section -->
+    <div id="ai-insight-section" class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <!-- Button (initial state) -->
+      <button id="ai-insight-btn" class="w-full flex items-center justify-center gap-2 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20 border border-violet-300/30 dark:border-violet-500/30 hover:from-violet-500/20 hover:to-purple-500/20 dark:hover:from-violet-500/30 dark:hover:to-purple-500/30 transition-all group">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-lg sm:text-xl group-hover:scale-110 transition-transform">auto_awesome</span>
+        <span class="text-sm sm:text-base font-bold text-violet-700 dark:text-violet-300">AI 요약 & 핵심 Insight</span>
+        <span class="material-symbols-outlined text-violet-400 dark:text-violet-500 text-sm">chevron_right</span>
+      </button>
+
+      <!-- Login Prompt (shown for logged-out users) -->
+      <div id="ai-insight-login" class="hidden">
+        <div class="flex flex-col items-center gap-3 py-4 px-3 rounded-xl bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10">
+          <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30">lock</span>
+          <p class="text-sm text-charcoal/70 dark:text-white/70 text-center">AI 도서 분석은 로그인 후 이용할 수 있습니다.</p>
+          <button id="ai-insight-login-btn" class="px-5 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">
+            로그인하기
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="ai-insight-loading" class="hidden py-4 px-1">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-violet-500 text-lg animate-pulse">auto_awesome</span>
+          <span id="ai-insight-loading-text" class="text-sm font-medium text-charcoal/70 dark:text-white/70">도서 정보 수집 중...</span>
+        </div>
+        <div class="w-full h-2 bg-charcoal/10 dark:bg-white/10 rounded-full overflow-hidden">
+          <div id="ai-insight-progress-bar" class="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+        <p id="ai-insight-progress-percent" class="text-right text-[10px] text-charcoal/40 dark:text-white/40 mt-1">0%</p>
+      </div>
+
+      <!-- Content -->
+      <div id="ai-insight-content" class="hidden space-y-3 mt-3">
+        <!-- 3줄 요약 -->
+        <div class="p-3 sm:p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200/50 dark:border-violet-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-base">summarize</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">3줄 요약</span>
+          </div>
+          <p id="ai-insight-summary" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 핵심 메시지 -->
+        <div class="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-base">lightbulb</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">핵심 메시지</span>
+          </div>
+          <p id="ai-insight-key-message" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 이런 사람에게 추천 -->
+        <div class="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200/50 dark:border-emerald-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-base">group</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">이런 사람에게 추천</span>
+          </div>
+          <p id="ai-insight-recommend" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 난이도 평가 -->
+        <div class="p-3 sm:p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200/50 dark:border-sky-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-sky-600 dark:text-sky-400 text-base">speed</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">난이도 평가</span>
+          </div>
+          <p id="ai-insight-difficulty" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="ai-insight-error" class="hidden flex flex-col items-center gap-2 py-4">
+        <span class="material-symbols-outlined text-2xl text-charcoal/30 dark:text-white/30">error_outline</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">AI 분석 중 오류가 발생했습니다.</p>
+        <button id="ai-insight-retry-btn" class="px-4 py-1.5 bg-violet-500 text-white text-xs font-bold rounded-lg hover:bg-violet-600 transition-colors">다시 시도</button>
       </div>
     </div>
 

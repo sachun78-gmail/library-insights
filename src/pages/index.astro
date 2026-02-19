@@ -4,9 +4,19 @@ import Auth from '../components/Auth.astro';
 import Analytics from '../components/Analytics.astro';
 import BookDetailModal from '../components/BookDetailModal.astro';
 ---
-<html lang="ko"><head>
+<html lang="ko" class=""><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
 <title>LibraryInsights - South Korean Public Library Bestsellers</title>
 <meta name="description" content="한국 공공도서관 대출 데이터를 기반으로 베스트셀러와 추천 도서를 탐색하고, 지역별 도서관 보유 정보를 확인하세요."/>
 <link rel="canonical" href="https://library-insights.pages.dev/"/>
@@ -80,6 +90,10 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
 <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
 </nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
 <button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
   <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
 </button>
@@ -149,6 +163,12 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
       <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
     </div>
   </div>
 </div>
@@ -527,7 +547,7 @@ sachun78@gmail.com
 <Auth />
 <script>
   import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
-  import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../scripts/bookmarks';
+  import { initBookmarks, isBookmarked, toggleBookmark, getUserId, getBookmarkedIsbns } from '../scripts/bookmarks';
 
   // Search form handler
   const searchForm = document.getElementById('search-form');
@@ -570,64 +590,123 @@ sachun78@gmail.com
 
   const bookPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e2e8f0' width='200' height='300'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='14' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  async function fetchRecommendation() {
+  function renderRecommendation(data) {
+    currentRecommendBook = data.book;
+
+    const recommendLabel = document.getElementById('recommend-label');
+    if (data.source === 'personalized') {
+      if (recommendLabel) recommendLabel.textContent = '내 서재 기반 추천';
+      recommendKeywordBadge?.classList.add('hidden');
+    } else {
+      if (recommendLabel) recommendLabel.textContent = '월간 키워드 추천';
+      if (data.keyword && recommendKeywordBadge) {
+        recommendKeywordBadge.textContent = `#${data.keyword}`;
+        recommendKeywordBadge.classList.remove('hidden');
+      }
+    }
+
+    if (recommendTitle) {
+      recommendTitle.textContent = `"${data.book.bookname}"`;
+    }
+
+    if (recommendAuthor) {
+      const authorText = data.book.authors || '저자 미상';
+      const publisherText = data.book.publisher ? ` · ${data.book.publisher}` : '';
+      const yearText = data.book.publication_year ? ` (${data.book.publication_year})` : '';
+      recommendAuthor.textContent = authorText + publisherText + yearText;
+    }
+
+    if (recommendDescription2) {
+      if (data.book.description) {
+        recommendDescription2.textContent = data.book.description;
+      } else if (data.book.class_nm) {
+        recommendDescription2.textContent = `분류: ${data.book.class_nm}`;
+      } else {
+        recommendDescription2.textContent = data.source === 'personalized'
+          ? '내 서재를 기반으로 추천된 도서입니다.'
+          : `"${data.keyword}" 키워드로 추천된 도서입니다.`;
+      }
+    }
+
+    if (recommendImage) {
+      const imageUrl = data.book.bookImageURL || bookPlaceholder;
+      recommendImage.style.backgroundImage = `url("${imageUrl}")`;
+    }
+
+    recommendLoading?.classList.add('hidden');
+    recommendContent?.classList.remove('hidden');
+  }
+
+  async function fetchRecommendation(skipCache = false) {
+    // Determine personalized vs default
+    const userId = getUserId();
+    const userBookmarkedIsbns = userId ? getBookmarkedIsbns() : [];
+    const isPersonalized = userBookmarkedIsbns.length > 0;
+    const cacheKey = isPersonalized
+      ? 'dailyRecommend_personal_' + new Date().toISOString().split('T')[0]
+      : 'dailyRecommend_' + new Date().toISOString().split('T')[0];
+
+    // Check localStorage cache (today only)
+    if (!skipCache) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data && data.book) {
+            renderRecommendation(data);
+            return;
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
     recommendLoading?.classList.remove('hidden');
     recommendContent?.classList.add('hidden');
     recommendError?.classList.add('hidden');
     recommendKeywordBadge?.classList.add('hidden');
 
     try {
-      const response = await fetch('/api/monthly-recommend');
+      let apiUrl: string;
+      if (isPersonalized) {
+        const isbns = userBookmarkedIsbns.slice(0, 10).join(';');
+        apiUrl = `/api/personalized-recommend?isbn13=${encodeURIComponent(isbns)}`;
+      } else {
+        apiUrl = '/api/monthly-recommend';
+      }
+      const response = await fetch(apiUrl);
       const data = await response.json();
 
       recommendLoading?.classList.add('hidden');
 
-      if (data.error && !data.book) {
-        recommendError?.classList.remove('hidden');
-        return;
-      }
-
-      if (!data.book) {
-        recommendError?.classList.remove('hidden');
-        return;
-      }
-
-      currentRecommendBook = data.book;
-
-      // Show keyword badge
-      if (data.keyword && recommendKeywordBadge) {
-        recommendKeywordBadge.textContent = `#${data.keyword}`;
-        recommendKeywordBadge.classList.remove('hidden');
-      }
-
-      // Update content
-      if (recommendTitle) {
-        recommendTitle.textContent = `"${data.book.bookname}"`;
-      }
-
-      if (recommendAuthor) {
-        const authorText = data.book.authors || '저자 미상';
-        const publisherText = data.book.publisher ? ` · ${data.book.publisher}` : '';
-        const yearText = data.book.publication_year ? ` (${data.book.publication_year})` : '';
-        recommendAuthor.textContent = authorText + publisherText + yearText;
-      }
-
-      if (recommendDescription2) {
-        if (data.book.description) {
-          recommendDescription2.textContent = data.book.description;
-        } else if (data.book.class_nm) {
-          recommendDescription2.textContent = `분류: ${data.book.class_nm}`;
-        } else {
-          recommendDescription2.textContent = `"${data.keyword}" 키워드로 추천된 도서입니다.`;
+      if ((data.error && !data.book) || !data.book) {
+        // Personalized failed and no book — fallback to monthly
+        if (isPersonalized) {
+          const fallbackRes = await fetch('/api/monthly-recommend');
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData && fallbackData.book) {
+            try {
+              Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('dailyRecommend_') && k !== cacheKey) localStorage.removeItem(k);
+              });
+              localStorage.setItem(cacheKey, JSON.stringify(fallbackData));
+            } catch { /* storage full */ }
+            renderRecommendation(fallbackData);
+            return;
+          }
         }
+        recommendError?.classList.remove('hidden');
+        return;
       }
 
-      if (recommendImage) {
-        const imageUrl = data.book.bookImageURL || bookPlaceholder;
-        recommendImage.style.backgroundImage = `url("${imageUrl}")`;
-      }
+      // Save to localStorage (clean up old keys)
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('dailyRecommend_') && k !== cacheKey) localStorage.removeItem(k);
+        });
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch { /* storage full, ignore */ }
 
-      recommendContent?.classList.remove('hidden');
+      renderRecommendation(data);
 
     } catch (error) {
       console.error('Recommendation fetch error:', error);
@@ -644,11 +723,10 @@ sachun78@gmail.com
   });
 
   recommendRetryBtn?.addEventListener('click', () => {
-    fetchRecommendation();
+    fetchRecommendation(true);
   });
 
-  // Load recommendation on page load
-  fetchRecommendation();
+  // fetchRecommendation is called after initBookmarks (below)
 
   // ========================================
   // New Arrivals Section
@@ -903,8 +981,8 @@ sachun78@gmail.com
     fetchNewArrivals();
   });
 
-  // Init bookmarks, then load new arrivals
-  initBookmarks().then(() => fetchNewArrivals());
+  // Init bookmarks, then load recommendation + new arrivals
+  initBookmarks().then(() => { fetchRecommendation(); fetchNewArrivals(); });
 
   // ========================================
   // Footer Modals (Terms, Privacy, Sitemap)
@@ -969,5 +1047,8 @@ sachun78@gmail.com
     const signinBtn = document.getElementById('signin-btn');
     signinBtn?.click();
   });
+</script>
+<script>
+  import '../scripts/theme';
 </script>
 </body></html>
