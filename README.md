@@ -1,76 +1,106 @@
-# library-insights
+ï»¿# library-insights monorepo
 
-Astro ±â¹İ µµ¼­ °Ë»ö/ÃßÃµ À¥¾ÛÀÔ´Ï´Ù. Cloudflare Pages(Functions) È¯°æÀ» ±âÁØÀ¸·Î µ¿ÀÛÇÏ¸ç, Supabase ÀÎÁõ/µ¥ÀÌÅÍ¿Í ¿ÜºÎ µµ¼­ API, OpenAI ±â¹İ ±â´ÉÀ» Æ÷ÇÔÇÕ´Ï´Ù.
+Astro ì›¹ì•±ê³¼ Fastify ì„œë²„ë¥¼ í•œ ì €ì¥ì†Œì—ì„œ ê´€ë¦¬í•˜ëŠ” npm workspaces ëª¨ë…¸ë ˆí¬ì…ë‹ˆë‹¤.
 
-## Tech Stack
-- Astro 5
-- Tailwind CSS
-- Cloudflare Pages + Wrangler
-- Supabase (`@supabase/supabase-js`)
-- OpenAI SDK
+## Structure
+
+```text
+apps/
+  web/        Astro + Tailwind + Cloudflare Pages
+  server/     Fastify proxy server
+```
 
 ## Prerequisites
+
 - Node.js 18+
 - npm
-- Cloudflare account (Pages ¹èÆ÷ ½Ã)
-- Supabase project (ÀÎÁõ/ÇÁ·ÎÇÊ/ºÏ¸¶Å© ±â´É »ç¿ë ½Ã)
 
 ## Install
+
 ```bash
 npm install
 ```
 
-## Run
+## Local Development
+
+ì›¹ + ì„œë²„ ë™ì‹œ ì‹¤í–‰:
+
 ```bash
 npm run dev
 ```
 
-Cloudflare Pages ·±Å¸ÀÓ ±âÁØÀ¸·Î È®ÀÎÇÏ·Á¸é:
+ê°œë³„ ì‹¤í–‰:
+
+```bash
+npm run dev:web
+npm run dev:server
+```
+
+Cloudflare Pages ëŸ°íƒ€ì„ í…ŒìŠ¤íŠ¸(ì›¹):
+
 ```bash
 npm run dev:cf
 ```
 
 ## Build / Preview
+
 ```bash
 npm run build
 npm run preview
-```
-
-Cloudflare Pages ¹Ì¸®º¸±â:
-```bash
 npm run preview:cf
 ```
 
-## Environment Variables
-·ÎÄÃ °³¹ß ½Ã `.env` ¶Ç´Â `.dev.vars`¸¦ »ç¿ëÇÕ´Ï´Ù.
+## Local Health Checks
 
-ÁÖ¿ä Å° ¿¹½Ã:
-- `PUBLIC_SUPABASE_URL`
-- `PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SECRET_KEY`
-- `OPENAI_API_KEY`
-- `DATA4LIBRARY_API_KEY`
-- `SEOUL_OPENDATA_API_KEY`
-- `NAVER_CLIENT_ID`
-- `NAVER_CLIENT_SECRET`
+ê°œë°œ ì„œë²„ ì‹¤í–‰ í›„:
 
-`.dev.vars.example`¸¦ Âü°íÇØ ÇÊ¿äÇÑ Å°¸¦ Ã¤¿î µÚ ½ÇÇàÇÏ¼¼¿ä.
-
-## Project Structure
-```text
-src/
-  components/         UI ÄÄÆ÷³ÍÆ®
-  lib/                °ø¿ë À¯Æ¿/Å¬¶óÀÌ¾ğÆ® (¿¹: supabase)
-  pages/              Astro ÆäÀÌÁö
-  pages/api/          API ¶ó¿ìÆ®
-  scripts/            Å¬¶óÀÌ¾ğÆ® ½ºÅ©¸³Æ®
-public/               Á¤Àû ¸®¼Ò½º
+```bash
+npm run check:server
+npm run check:web
+npm run check:local
 ```
 
-## Deployment
-Cloudflare Pages ¼³Á¤ ÆÄÀÏÀº `wrangler.toml`¿¡ ÀÖ½À´Ï´Ù.
-±âº» ºôµå »êÃâ¹°Àº `dist/`ÀÔ´Ï´Ù.
+ì›¹ í¬íŠ¸ê°€ ê¸°ë³¸ê°’(4321)ê³¼ ë‹¤ë¥´ë©´:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/check-web.ps1 -WebBaseUrl http://127.0.0.1:4322
+```
+
+## Environment Variables
+
+- ì›¹: `apps/web/.env`, `apps/web/.dev.vars`
+- ì„œë²„: `apps/server/.env` (í…œí”Œë¦¿: `apps/server/.env.example`)
+
+ë°°í¬ìš© í…œí”Œë¦¿:
+
+- ì›¹: `apps/web/.env.production.example`
+- ì„œë²„: `apps/server/.env.production.example`
+
+ì„œë²„ ì£¼ìš” í‚¤:
+
+- `PORT` (ê¸°ë³¸ `8080`)
+- `DATA4LIBRARY_API_KEY`
+- `PROXY_SHARED_SECRET`
+
+ì›¹ ì£¼ìš” í‚¤:
+
+- `LIB_PROXY_BASE_URL` (ì˜ˆ: `http://127.0.0.1:8080` ë˜ëŠ” ë°°í¬ ì„œë²„ URL)
+- `LIB_PROXY_SHARED_SECRET` (ì„œë²„ `PROXY_SHARED_SECRET`ì™€ ë™ì¼)
 
 ## Notes
-- ¹Î°¨ Á¤º¸´Â Git¿¡ Ä¿¹ÔÇÏÁö ¸»°í `.env`, `.dev.vars`·Î °ü¸®ÇÏ¼¼¿ä.
-- ÇöÀç ¼³Á¤Àº ¼­¹ö Ãâ·Â(`output: "server"`) + Cloudflare ¾î´ğÅÍ ±âÁØÀÔ´Ï´Ù.
+
+- ê¸°ì¡´ ë£¨íŠ¸ `.env`, `.dev.vars`ëŠ” ìœ ì§€ë©ë‹ˆë‹¤. í˜„ì¬ ì‹¤í–‰ ê²½ë¡œ ê¸°ì¤€ìœ¼ë¡œëŠ” `apps/web` / `apps/server` ë‚´ë¶€ íŒŒì¼ì„ ìš°ì„  ì‚¬ìš©í•©ë‹ˆë‹¤.
+
+## Troubleshooting
+
+- `Library proxy not configured`
+  - ì›ì¸: ì›¹ì—ì„œ `LIB_PROXY_BASE_URL`, `LIB_PROXY_SHARED_SECRET`ë¥¼ ì½ì§€ ëª»í•¨.
+  - ì¡°ì¹˜: `apps/web/.env` ë˜ëŠ” `apps/web/.dev.vars`ì— ë‘ í‚¤ë¥¼ ì¶”ê°€í•˜ê³  `npm run dev` ì¬ì‹œì‘.
+
+- `Unauthorized` (web API í˜¸ì¶œ ì‹œ)
+  - ì›ì¸: ì›¹ `LIB_PROXY_SHARED_SECRET`ì™€ ì„œë²„ `PROXY_SHARED_SECRET` ë¶ˆì¼ì¹˜.
+  - ì¡°ì¹˜: `apps/web/.env`, `apps/web/.dev.vars`, `apps/server/.env` ê°’ ë™ì¼í•˜ê²Œ ë§ì¶˜ ë’¤ ì¬ì‹œì‘.
+
+- envë¥¼ ë°”ê¿¨ëŠ”ë° ë°˜ì˜ì´ ì•ˆ ë¨
+  - ì›ì¸: dev í”„ë¡œì„¸ìŠ¤ê°€ ì´ì „ envë¥¼ ìœ ì§€ ì¤‘.
+  - ì¡°ì¹˜: ì‹¤í–‰ ì¤‘ì¸ `npm run dev`ë¥¼ ì™„ì „íˆ ì¢…ë£Œ í›„ ë‹¤ì‹œ ì‹¤í–‰.

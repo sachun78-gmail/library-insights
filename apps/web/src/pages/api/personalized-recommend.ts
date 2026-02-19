@@ -1,18 +1,11 @@
 import type { APIRoute } from 'astro';
 import { getCachedResponse, setCachedResponse } from '../../lib/cache';
+import { fetchLibraryProxy } from '../../lib/library-proxy';
 
 export const prerender = false;
 
-const CACHE_TTL = 24 * 60 * 60; // 24시간
+const CACHE_TTL = 24 * 60 * 60; // 24 hours
 
-function getEnvVar(locals: any, key: string): string | undefined {
-  if (locals?.runtime?.env?.[key]) {
-    return locals.runtime.env[key];
-  }
-  return (import.meta.env as any)[key];
-}
-
-// Extract book objects from various response structures
 function extractBooks(data: any): any[] {
   if (!data || !data.response) return [];
 
@@ -40,32 +33,22 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  // 날짜 + ISBN 기반 캐시 키
   const today = new Date().toISOString().split('T')[0];
   const cacheKey = `${url.origin}/api/personalized-recommend?isbn13=${isbn13}&date=${today}`;
   const cached = await getCachedResponse(cacheKey);
   if (cached) return cached;
 
-  const apiKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured', book: null }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   try {
-    // Step 1: recommandList (mania type, default)
-    const maniaUrl = `https://data4library.kr/api/recommandList?authKey=${apiKey}&isbn13=${isbn13}&format=json`;
-    const maniaRes = await fetch(maniaUrl);
-    const maniaData = await maniaRes.json();
+    const maniaData = await fetchLibraryProxy(locals, '/v1/recommandList', {
+      isbn13,
+    });
     let books = extractBooks(maniaData);
 
-    // Step 2: type=reader로 재시도
     if (books.length === 0) {
-      const readerUrl = `https://data4library.kr/api/recommandList?authKey=${apiKey}&isbn13=${isbn13}&type=reader&format=json`;
-      const readerRes = await fetch(readerUrl);
-      const readerData = await readerRes.json();
+      const readerData = await fetchLibraryProxy(locals, '/v1/recommandList', {
+        isbn13,
+        type: 'reader',
+      });
       books = extractBooks(readerData);
     }
 
@@ -78,7 +61,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // 첫 번째 도서 추출
     const firstBook = books[0];
     const result = {
       book: {
@@ -102,12 +84,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Personalized recommend API error:', error);
-    return new Response(JSON.stringify({
-      error: 'Failed to fetch personalized recommendation',
-      book: null,
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch personalized recommendation',
+        book: null,
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 };
+

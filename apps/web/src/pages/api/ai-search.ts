@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import OpenAI from 'openai';
 import { getCachedResponse, setCachedResponse } from '../../lib/cache';
+import { fetchLibraryProxy } from '../../lib/library-proxy';
 
 export const prerender = false;
 
@@ -130,15 +131,13 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
   });
 }
 
-async function fetchJson(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<any> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: controller.signal });
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
+async function fetchLibraryData(
+  locals: any,
+  endpoint: string,
+  params: Record<string, string | number | boolean | undefined>,
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<any> {
+  return fetchLibraryProxy(locals, `/v1/${endpoint}`, params, timeoutMs);
 }
 
 function getCacheRegionKey(lat: number, lon: number): string {
@@ -164,16 +163,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return jsonResponse({ error: 'keyword is required' }, 400);
   }
 
-  const authKey = getEnvVar(locals, 'DATA4LIBRARY_API_KEY');
   const openaiKey = getEnvVar(locals, 'OPENAI_API_KEY');
 
   if (!openaiKey) {
     return jsonResponse({ error: 'OpenAI API key not configured' }, 500);
   }
-  if (!authKey) {
-    return jsonResponse({ error: 'Library API key not configured' }, 500);
-  }
-
   const cacheKey = buildCacheKey(url, keyword, lat, lon);
   const cached = await getCachedResponse(cacheKey);
   if (cached) return cached;
@@ -222,10 +216,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const seedSearchResults = await Promise.all(
       aiBooks.slice(0, MAX_SEED_LOOKUPS).map(async (rec) => {
         try {
-          const searchUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&keyword=${encodeURIComponent(
-            cleanTitle(rec.title)
-          )}&pageNo=1&pageSize=1&format=json`;
-          const data = await fetchJson(searchUrl);
+          const data = await fetchLibraryData(locals, 'srchBooks', {
+            keyword: cleanTitle(rec.title),
+            pageNo: 1,
+            pageSize: 1,
+          });
           if (data.response?.error) return null;
           const docs = data.response?.docs || [];
           return docs.length > 0 ? docs[0].doc : null;
@@ -267,8 +262,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     console.log('[AI-Search] Step 3a: usageAnalysisList');
     try {
-      const usageUrl = `https://data4library.kr/api/usageAnalysisList?authKey=${authKey}&isbn13=${primarySeed.isbn13}&format=json`;
-      const usageData = await fetchJson(usageUrl, 3000);
+      const usageData = await fetchLibraryData(
+        locals,
+        'usageAnalysisList',
+        { isbn13: primarySeed.isbn13 },
+        3000
+      );
       if (!usageData.response?.error) {
         const maniaRec = usageData.response?.maniaRecBooks || [];
         const readerRec = usageData.response?.readerRecBooks || [];
@@ -286,12 +285,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
       console.log('[AI-Search] Step 3b: recommandList');
       try {
         const [maniaData, readerData] = await Promise.all([
-          fetchJson(
-            `https://data4library.kr/api/recommandList?authKey=${authKey}&isbn13=${seedIsbns}&format=json`
-          ).catch(() => ({})),
-          fetchJson(
-            `https://data4library.kr/api/recommandList?authKey=${authKey}&isbn13=${seedIsbns}&type=reader&format=json`
-          ).catch(() => ({})),
+          fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns }).catch(() => ({})),
+          fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns, type: 'reader' }).catch(() => ({})),
         ]);
 
         const maniaBooks = extractBooks(maniaData);
@@ -311,10 +306,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const extraResults = await Promise.all(
           aiBooks.slice(seedBooks.length, MAX_RETURN_BOOKS).map(async (rec) => {
             try {
-              const searchUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&keyword=${encodeURIComponent(
-                cleanTitle(rec.title)
-              )}&pageNo=1&pageSize=1&format=json`;
-              const data = await fetchJson(searchUrl);
+              const data = await fetchLibraryData(locals, 'srchBooks', {
+                keyword: cleanTitle(rec.title),
+                pageNo: 1,
+                pageSize: 1,
+              });
               const docs = data.response?.docs || [];
               return docs.length > 0 ? docs[0].doc : null;
             } catch {
@@ -369,8 +365,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
           const regionResults = await Promise.all(
             nearestRegions.map(async (r) => {
               try {
-                const data = await fetchJson(
-                  `https://data4library.kr/api/libSrchByBook?authKey=${authKey}&isbn=${isbn}&region=${r.code}&format=json`,
+                const data = await fetchLibraryData(
+                  locals,
+                  'libSrchByBook',
+                  { isbn, region: r.code },
                   2000
                 );
                 return (data.response?.libs || []).length;
