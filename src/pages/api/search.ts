@@ -39,8 +39,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
     // 도서관 정보나루 도서 검색 API (HTTPS 필수 - Cloudflare)
     let apiUrl;
     if (isbn) {
-      // ISBN search
-      apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&isbn=${encodeURIComponent(isbn)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+      // Prefer exact isbn13 query when provided (13 digits)
+      const normalizedIsbn = isbn.replace(/[^0-9Xx]/g, '');
+      if (/^\d{13}$/.test(normalizedIsbn)) {
+        apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&isbn13=${encodeURIComponent(normalizedIsbn)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+      } else {
+        apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&isbn=${encodeURIComponent(isbn)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;
+      }
     } else {
       // Keyword search
       apiUrl = `https://data4library.kr/api/srchBooks?authKey=${authKey}&title=${encodeURIComponent(keyword)}&pageNo=${pageNo}&pageSize=${pageSize}&format=json`;

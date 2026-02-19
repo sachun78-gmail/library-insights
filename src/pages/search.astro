@@ -117,11 +117,11 @@ import BookDetailModal from '../components/BookDetailModal.astro';
           <div class="py-2">
             <a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
               <span class="material-symbols-outlined text-lg">person</span>
-              留덉씠 ?섏씠吏
+              마이페이지
             </a>
             <button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
               <span class="material-symbols-outlined text-lg">logout</span>
-              濡쒓렇?꾩썐
+              로그아웃
             </button>
           </div>
         </div>
@@ -589,9 +589,76 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     // AI Search Function
     // ========================================
     const loadingTextEl = document.getElementById('loading-text');
+    let aiSearchRequestId = 0;
+    let aiCardsRenderToken = 0;
 
     // Store AI recommendations for detail lookup (ai-only mode)
     let aiOnlyRecommendations: Array<{ title: string; author: string }> = [];
+
+    async function fetchJSONWithTimeout(apiUrl: string, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(apiUrl, { signal: controller.signal });
+        const data = await res.json();
+        if (data?.error) throw new Error(data.error);
+        return data;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function getGeoPosition(timeoutMs = 2500): Promise<GeolocationPosition | null> {
+      if (!navigator.geolocation) return null;
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: timeoutMs,
+            maximumAge: 300000,
+          });
+        });
+        return pos;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyAIResult(data: any) {
+      const mode = data.mode as string;
+      const recommendations = data.recommendations || [];
+      const regions = (data.regions || []) as string[];
+      const seedBook = data.seedBook;
+
+      if (recommendations.length === 0) {
+        aiEmptyState?.classList.remove('hidden');
+        return;
+      }
+
+      if (mode === 'full') {
+        const availCount = recommendations.filter((r: any) => r.nearbyLibCount > 0).length;
+        if (heroTitle) {
+          heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
+        }
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다.`;
+        }
+      } else if (mode === 'no-gps') {
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 관련 도서를 추천합니다.`;
+        }
+      } else {
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다. 클릭하면 상세 정보를 확인할 수 있습니다.`;
+        }
+      }
+
+      if (mode === 'ai-only') {
+        renderAIOnlyCards(recommendations);
+      } else {
+        renderFullAICards(recommendations, mode, seedBook);
+      }
+    }
 
     async function performAISearch() {
       if (!keyword) {
@@ -599,85 +666,59 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         return;
       }
 
+      const requestId = ++aiSearchRequestId;
       hideAllStates();
       loadingState?.classList.remove('hidden');
-      if (loadingTextEl) loadingTextEl.textContent = 'AI가 주변 도서관 대출 가능 도서를 찾는 중... (약 10~15초 소요)';
+      if (loadingTextEl) loadingTextEl.textContent = 'AI 추천 생성 중...';
+
+      if (aiLocationStatus) {
+        aiLocationStatus.classList.remove('hidden');
+        if (aiLocationIcon) aiLocationIcon.textContent = 'location_searching';
+        if (aiLocationText) aiLocationText.textContent = '위치 확인 중';
+      }
+
+      const baseUrl = `/api/ai-search?keyword=${encodeURIComponent(keyword)}`;
+      const geoPromise = getGeoPosition(2500);
 
       try {
-        let apiUrl = `/api/ai-search?keyword=${encodeURIComponent(keyword)}`;
+        const baseData = await fetchJSONWithTimeout(baseUrl, 15000);
+        if (requestId !== aiSearchRequestId || !isAIMode) return;
 
-        // Try to get GPS for nearby library check
-        try {
-          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            if (!navigator.geolocation) { reject(); return; }
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: false, timeout: 8000, maximumAge: 300000
-            });
-          });
-          apiUrl += `&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`;
+        loadingState?.classList.add('hidden');
+        applyAIResult(baseData);
+
+        const pos = await geoPromise;
+        if (requestId !== aiSearchRequestId || !isAIMode) return;
+
+        if (!pos) {
           if (aiLocationStatus) {
-            aiLocationStatus.classList.remove('hidden');
-            if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
-            if (aiLocationText) aiLocationText.textContent = '위치 확인됨';
-          }
-        } catch {
-          // GPS not available, proceed without
-          if (aiLocationStatus) {
-            aiLocationStatus.classList.remove('hidden');
             if (aiLocationIcon) aiLocationIcon.textContent = 'location_off';
             if (aiLocationText) aiLocationText.textContent = '위치 없음';
           }
-        }
-
-        if (loadingTextEl) loadingTextEl.textContent = 'AI 추천 도서를 분석하는 중...';
-
-        const res = await fetch(apiUrl);
-        const data = await res.json();
-
-        loadingState?.classList.add('hidden');
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        const mode = data.mode as string; // 'full', 'no-gps', 'ai-only'
-        const recommendations = data.recommendations || [];
-        const regions = (data.regions || []) as string[];
-        const seedBook = data.seedBook;
-
-        if (recommendations.length === 0) {
-          aiEmptyState?.classList.remove('hidden');
           return;
         }
 
-        // Update hero & result count
-        if (mode === 'full') {
-          const availCount = recommendations.filter((r: any) => r.nearbyLibCount > 0).length;
-          if (heroTitle) {
-            heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
-          }
-          if (resultCountEl) {
-            resultCountEl.textContent = `${regions.join(', ')} 지역 도서관에서 대출 가능한 ${availCount}권 포함, 총 ${recommendations.length}권을 추천합니다.`;
-          }
-        } else if (mode === 'no-gps') {
-          if (resultCountEl) {
-            resultCountEl.textContent = `AI가 ${recommendations.length}권의 관련 도서를 추천합니다. (위치 정보 없이 도서관 확인 불가)`;
-          }
-        } else {
-          // ai-only
-          if (resultCountEl) {
-            resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다. 클릭하면 상세 정보를 확인할 수 있습니다.`;
-          }
+        if (aiLocationStatus) {
+          if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
+          if (aiLocationText) aiLocationText.textContent = '위치 반영 중';
         }
 
-        // Render based on mode
-        if (mode === 'ai-only') {
-          renderAIOnlyCards(recommendations);
-        } else {
-          renderFullAICards(recommendations, mode, seedBook);
+        const geoUrl = `${baseUrl}&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`;
+        const geoData = await fetchJSONWithTimeout(geoUrl, 12000).catch(() => null);
+        if (!geoData || requestId !== aiSearchRequestId || !isAIMode) return;
+
+        // Prevent double-render flicker: cards are rendered from the first response.
+        // Apply geo result only if nothing is rendered yet.
+        if (geoData.mode === 'full' && currentBooks.length === 0) {
+          applyAIResult(geoData);
         }
 
+        if (aiLocationStatus) {
+          if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
+          if (aiLocationText) aiLocationText.textContent = '위치 반영 완료';
+        }
       } catch (error) {
+        if (requestId !== aiSearchRequestId) return;
         loadingState?.classList.add('hidden');
         errorState?.classList.remove('hidden');
         const errorMessage = document.getElementById('error-message');
@@ -724,25 +765,30 @@ import BookDetailModal from '../components/BookDetailModal.astro';
           const publisher = book.publisher || '';
           const pubYear = book.publication_year || '';
 
+          const stableIsbn = book.isbn13 || book.isbn || '';
           return `
             <div
               class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
               onclick="openBookModal(${index})"
+              data-ai-card-index="${index}"
+              data-ai-isbn="${stableIsbn}"
             >
               <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
-                ${hasImage ? `
-                  <img
-                    src="${bookImageUrl}"
-                    alt="${bookname}"
-                    class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
-                    onerror="this.onerror=null; this.src='${placeholderImage}';"
-                  />
-                ` : `
-                  <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
-                    <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
-                    <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">No Image</span>
-                  </div>
-                `}
+                <div class="ai-image-slot">
+                  ${hasImage ? `
+                    <img
+                      src="${bookImageUrl}"
+                      alt="${bookname}"
+                      class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                      onerror="this.onerror=null; this.src='${placeholderImage}';"
+                    />
+                  ` : `
+                    <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                      <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
+                      <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">No Image</span>
+                    </div>
+                  `}
+                </div>
                 <div class="flex flex-col flex-1 min-w-0">
                   <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${bookname}</h3>
                   <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-0.5 sm:mb-1 truncate">${authors || '저자 미상'}</p>
@@ -756,12 +802,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                         <span class="material-symbols-outlined text-xs">local_library</span>
                         주변 ${libCount}개 도서관 소장
-                      </span>
-                    ` : ''}
-                    ${mode === 'full' && libCount === 0 ? `
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-charcoal/5 dark:bg-white/10 text-charcoal/50 dark:text-white/50">
-                        <span class="material-symbols-outlined text-xs">location_off</span>
-                        주변 도서관 미소장
                       </span>
                     ` : ''}
                     ${book.isbn13 ? `
@@ -779,7 +819,67 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         searchResults.innerHTML = seedHtml + cardsHtml;
         searchResults.classList.remove('hidden');
         attachBookmarkHandlers('ai');
+        const renderToken = ++aiCardsRenderToken;
+        hydrateMissingAICardImages(renderToken);
       }
+    }
+
+    function normalizeIsbn(value: string | null | undefined): string {
+      if (!value) return '';
+      return String(value).replace(/[^0-9Xx]/g, '').toUpperCase();
+    }
+
+    async function hydrateMissingAICardImages(renderToken: number) {
+      const candidates = currentBooks
+        .map((book: any, index: number) => ({ book, index }))
+        .filter(({ book }) => !!(book?.isbn13 || book?.isbn) && !book?.bookImageURL)
+        .slice(0, 12);
+
+      await Promise.all(
+        candidates.map(async ({ book, index }) => {
+          try {
+            const requestIsbn = book.isbn13 || book.isbn;
+            const normalizedRequestIsbn = normalizeIsbn(requestIsbn);
+            if (!normalizedRequestIsbn) return;
+
+            const data = await fetchJSONWithTimeout(
+              `/api/search?isbn=${encodeURIComponent(requestIsbn)}&pageNo=1&pageSize=5`,
+              5000
+            );
+            const docs = data?.response?.docs || [];
+            const matched = docs
+              .map((d: any) => d?.doc)
+              .find((doc: any) => {
+                const docIsbn13 = normalizeIsbn(doc?.isbn13);
+                const docIsbn = normalizeIsbn(doc?.isbn);
+                return docIsbn13 === normalizedRequestIsbn || docIsbn === normalizedRequestIsbn;
+              });
+            const img = matched?.bookImageURL;
+            if (!img) return;
+
+            const card = document.querySelector(`[data-ai-card-index="${index}"]`);
+            const slot = card?.querySelector('.ai-image-slot');
+            if (!slot) return;
+            if (renderToken !== aiCardsRenderToken) return;
+            if (
+              normalizeIsbn((card as HTMLElement).getAttribute('data-ai-isbn')) !==
+              normalizedRequestIsbn
+            ) return;
+
+            slot.innerHTML = `
+              <img
+                src="${img}"
+                alt="${book.bookname || book.bookName || ''}"
+                class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                onerror="this.onerror=null; this.src='${placeholderImage}';"
+              />
+            `;
+            book.bookImageURL = img;
+          } catch {
+            // keep placeholder on failure
+          }
+        })
+      );
     }
 
     // Render minimal cards for ai-only mode (just title + author from OpenAI)
