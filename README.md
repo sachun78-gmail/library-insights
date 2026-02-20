@@ -104,3 +104,9 @@ powershell -ExecutionPolicy Bypass -File scripts/check-web.ps1 -WebBaseUrl http:
 - env를 바꿨는데 반영이 안 됨
   - 원인: dev 프로세스가 이전 env를 유지 중.
   - 조치: 실행 중인 `npm run dev`를 완전히 종료 후 다시 실행.
+
+## Production Deployment
+
+- systemd service template: `deploy/systemd/bookreserch-server.service`
+- nginx reverse proxy template: `deploy/nginx/bookreserch-server.conf`
+- setup guide: `deploy/README.md`

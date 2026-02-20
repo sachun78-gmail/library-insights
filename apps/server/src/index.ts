@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import dotenv from "dotenv";
 
+// Prefer service-specific env file, then fall back to repository-root .env.
+dotenv.config({ path: "apps/server/.env" });
 dotenv.config();
 
 const app = Fastify({ logger: true });
